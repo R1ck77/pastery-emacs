@@ -1,2 +1,2 @@
-$ curl -X GET 'https://www.pastery.net/api/paste/bzgkgz/?api_key='$mykey 
+$ curl -X GET 'https://www.pastery.net/api/paste/bzgkgz/?api_key=mykey' 
 {"pastes": [{"id": "bzgkgz", "title": "Sample data bis", "url": "https://www.pastery.net/bzgkgz/", "language": "ttl", "duration": 43196, "body": "def my_function(x):\n    return x + 42\n\nprint(my_function(0))\n"}]}

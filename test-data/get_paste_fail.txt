@@ -1,2 +1,2 @@
-# curl -X GET 'https://www.pastery.net/api/paste/foobar/?api_key='$mykey
+# curl -X GET 'https://www.pastery.net/api/paste/foobar/?api_key=mykey'
 {"pastes": []}
