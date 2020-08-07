@@ -1,0 +1,2 @@
+$ curl -X GET 'https://www.pastery.net/api/paste/?api_key='$mykey 
+{"pastes": [{"id": "bzgkgz", "title": "Sample data bis", "url": "https://www.pastery.net/bzgkgz/", "language": "ttl", "duration": 43199}, {"id": "hmueky", "title": "Sample data", "url": "https://www.pastery.net/hmueky/", "language": "ttl", "duration": 43196}]}
