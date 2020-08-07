@@ -13,15 +13,18 @@
 
 (defun mock-pastery-response (headers)
   (message "Headers: %s" headers)
-  "foobar")
+  (if (alist-get ':DELETE headers)
+      "Rejoice, is a delete!"
+    "Not a delete :("))
 
 (defun mock-pastery-handler (response)
   (with-slots (process headers) response
     (let ((result (mock-pastery-response headers)))
+      (message "Sending %s" result)
       (ws-response-header process 200
                           '("Content Type" . "application/json")
-                          (cons "Content-Length" (number-to-string (length result)))))
-    (process-send-string process result)))
+                          (cons "Content-Length" (number-to-string (length result))))
+      (process-send-string process result))))
 
 (defun start-mock-server (&optional try-kill)
   (interactive)
