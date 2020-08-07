@@ -1,5 +1,12 @@
 (require 'web-server)
 
+(defun read-sample (name)
+  (with-temp-buffer
+    (insert-file (format "test-data/%s" name))
+    (goto-char (point-min))
+    (forward-line)
+    (buffer-substring-no-properties (point) (point-max))))
+
 (defun stop-mock-server ()
   (interactive)
   (ws-stop-all))
