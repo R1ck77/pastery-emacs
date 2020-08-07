@@ -1,2 +1,2 @@
-$ curl -X DELETE 'https://www.pastery.net/api/paste/bzgkgz/?api_key='$mykey 
+$ curl -X DELETE 'https://www.pastery.net/api/paste/bzgkgz/?api_key=mykey'
 {"result": "success"}

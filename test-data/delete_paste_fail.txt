@@ -1,2 +1,2 @@
-$ curl -X DELETE 'https://www.pastery.net/api/paste/foobar/?api_key='$mykey
+$ curl -X DELETE 'https://www.pastery.net/api/paste/foobar/?api_key=mykey'
 {"result": "error", "error_msg": "That paste does not belong to you."}

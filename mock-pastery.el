@@ -13,13 +13,15 @@
 
 (defun mock-pastery-response (headers)
   (message "Headers: %s" headers)
-  (if (alist-get ':DELETE headers)
-      "Rejoice, is a delete!"
-    "Not a delete :("))
+  (let ((delete-value (alist-get ':DELETE headers)))
+    (if (equal delete-value "/api/paste/bzgkgz/")
+        (read-sample "delete_paste_ok.txt")
+      (read-sample "delete_paste_fail.txt"))))
 
 (defun mock-pastery-handler (response)
   (with-slots (process headers) response
     (let ((result (mock-pastery-response headers)))
+      (message "Getting the header: %s" headers)
       (message "Sending %s" result)
       (ws-response-header process 200
                           '("Content Type" . "application/json")
