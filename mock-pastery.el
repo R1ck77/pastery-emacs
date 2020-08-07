@@ -4,17 +4,17 @@
   (interactive)
   (ws-stop-all))
 
+(defun mock-pastery-response (headers)
+  (message "Headers: %s" headers)
+  "foobar")
+
 (defun mock-pastery-handler (response)
   (with-slots (process headers) response
-    (let ((echo-response (format "PROCESS: %s
-
-HEADERS: %s
-
-RESPONSE: %s" process headers response)))
-     (ws-response-header process 200
-                         '("Content Type" . "application/json")
-                         (cons "Content-Length" (number-to-string (length echo-response))))
-     (process-send-string process echo-response))))
+    (let ((result (mock-pastery-response headers)))
+      (ws-response-header process 200
+                          '("Content Type" . "application/json")
+                          (cons "Content-Length" (number-to-string (length result)))))
+    (process-send-string process result)))
 
 (defun start-mock-server (&optional try-kill)
   (interactive)
