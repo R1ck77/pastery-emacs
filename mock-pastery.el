@@ -11,12 +11,21 @@
   (interactive)
   (ws-stop-all))
 
+(defun wrong-api-key (headers)
+  (let ((api-key (cdr (assoc "api_key" headers))))
+    (cond
+     ((null api-key)
+      (read-sample "missing_api_key.txt"))
+     ((not (equal "mykey" api-key))
+      (read-sample "invalid_api_key.txt")))))
+
 (defun mock-pastery-response (headers)
   (message "Headers: %s" headers)
-  (let ((delete-value (alist-get ':DELETE headers)))
-    (if (equal delete-value "/api/paste/bzgkgz/")
-        (read-sample "delete_paste_ok.txt")
-      (read-sample "delete_paste_fail.txt"))))
+  (or (wrong-api-key headers)
+      (let ((delete-value (alist-get ':DELETE headers)))
+        (if (equal delete-value "/api/paste/bzgkgz/")
+            (read-sample "delete_paste_ok.txt")
+          (read-sample "delete_paste_fail.txt")))))
 
 (defun mock-pastery-handler (response)
   (with-slots (process headers) response
