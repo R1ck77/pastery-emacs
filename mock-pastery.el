@@ -23,7 +23,8 @@
   (message "Headers: %s" headers)
   (or (wrong-api-key headers)
       (let ((delete-value (alist-get ':DELETE headers))
-            (get-value (alist-get ':GET headers)))
+            (get-value (alist-get ':GET headers))
+            (post-value (alist-get ':POST headers)))
         (cond
          (delete-value
           (cond 
@@ -38,7 +39,8 @@
            ((equal get-value "/api/paste/") ; missing condition for single
             (read-sample "list_pastes_ok_multi.txt"))
            (t
-            (read-sample "get_paste_fail.txt"))))))))
+            (read-sample "get_paste_fail.txt"))))
+         (post-value (read-sample "write_paste_ok.txt"))))))
 
 (defun mock-pastery-handler (response)
   (with-slots (process headers) response

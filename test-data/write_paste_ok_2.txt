@@ -1,2 +1,2 @@
-$ curl -X POST 'https://www.pastery.net/api/paste/?title=Sample+data+bis&api_key='$mykey --data-binary @data.py
+$ curl -X POST 'https://www.pastery.net/api/paste/?title=Sample+data+bis&api_key=mykey' --data-binary @data.py
 {"id": "bzgkgz", "title": "Sample data bis", "url": "https://www.pastery.net/bzgkgz/", "language": "ttl", "duration": 43199}
