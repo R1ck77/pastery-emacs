@@ -43,34 +43,21 @@
            (t
             (200-answer "get_paste_fail.txt"))))
          (post-value
-          '(100 . ""))))))
+          (200-answer "write_paste_ok.txt"))))))
 
 (defun mock-pastery-handler (request)
-  (message "!!!!!!!!!!!HANDLER CALLED!!!!!!!!")
-  (message "Handler called with: \n>>>>>>\n%s\n<<<<<" request)
   (with-slots (process headers) request
-    (setq whatever headers)
-    (setq nprocess process)
     (let ((code-content (mock-pastery-response headers)))
       (ws-response-header process (car code-content)
                           '("Content Type" . "application/json")
                           (cons "Content-Length" (number-to-string (length (cdr code-content)))))
-      (process-send-string process (cdr code-content))
-      (when (= 100 (car code-content))
-        (ws-web-socket-connect request
-                               (lambda (proc string)
-                                 (message "GOT: %s" string)
-                                 (process-send-string proc
-                                                      (ws-web-socket-frame (concat "you said: " string)))))
-        :keep-alive
-        
-))))
+      (process-send-string process (cdr code-content)))))
 
 (defun start-mock-server (&optional try-kill)
   (interactive)
   (when try-kill
     (stop-mock-server))
-  (ws-start 'mock-pastery-handler 8080))
+  (ws-start #'mock-pastery-handler 8080))
 
 (defmacro with-debug-server (&rest forms)
   (let ((result (make-symbol "result")))
