@@ -66,3 +66,5 @@
        (let ((,result (progn ,@forms)))
          (stop-mock-server)
          ,result))))
+
+(provide 'mock-pastery)
