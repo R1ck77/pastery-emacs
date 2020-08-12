@@ -42,15 +42,21 @@
            (t
             (200-answer "get_paste_fail.txt"))))
          (post-value
-          (200-answer "write_paste_ok.txt"))))))
+                                        ;          (200-answer "write_paste_ok.txt")
+          (cons 100 "Continue\r\n\r\n")
+          )))))
 
 (defun mock-pastery-handler (request)
+  (message "REQUEST!")
+  (setq last-request request)
   (with-slots (process headers) request
     (let ((code-content (mock-pastery-response headers)))
       (ws-response-header process (car code-content)
                           '("Content Type" . "application/json")
                           (cons "Content-Length" (number-to-string (length (cdr code-content)))))
-      (process-send-string process (cdr code-content)))))
+      (process-send-string process (cdr code-content))
+      (if (= 100 (car code-content))
+          :keep-alive))))
 
 (defun start-mock-server (&optional try-kill)
   (interactive)
