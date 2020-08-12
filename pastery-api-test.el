@@ -63,4 +63,11 @@
       (expect (with-debug-server
                (let ((pastery-url "localhost:8080"))
                  (pastery/delete-paste "mykey" "bzgkgz")))
-              :to-equal '((result . "success"))))))
+              :to-equal '((result . "success")))))
+  (describe "pastery/put-paste"
+        (it "returns an error if the API key is wrong"
+      (expect (with-debug-server
+               (let ((pastery-url "localhost:8080"))
+                 (pastery/put-paste "wrong-api-key" "title" "content")))
+              :to-equal '((result . "error")
+                          (error_msg . "\"api_key\" must be a valid API key."))))))

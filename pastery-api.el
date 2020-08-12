@@ -29,4 +29,13 @@
             :parser 'json-read
             :sync t)))
 
+(defun pastery/put-paste (api-key title content)
+  (request-response-data
+   (request (format "%s/api/paste/" pastery-url)
+            :type "POST"
+            :params `(("api_key" . ,api-key)
+                      ("title" . ,title))
+            :parser 'json-read
+            :sync t)))
+
 (provide 'pastery-api)
