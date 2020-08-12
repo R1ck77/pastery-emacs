@@ -22,6 +22,7 @@
       (200-answer "invalid_api_key.txt")))))
 
 (defun mock-pastery-response (headers)
+  (message "Dealing my cards…")
   (or (wrong-api-key headers)
       (let ((delete-value (alist-get ':DELETE headers))
             (get-value (alist-get ':GET headers))
@@ -55,7 +56,8 @@
                           '("Content Type" . "application/json")
                           (cons "Content-Length" (number-to-string (length (cdr code-content)))))
       (process-send-string process (cdr code-content))
-      (if (= 100 (car code-content))
+      (message "Size of the pending message is: %d" (length (oref request pending)))
+      (if (= 100 (car code-content))          
           :keep-alive))))
 
 (defun start-mock-server (&optional try-kill)
