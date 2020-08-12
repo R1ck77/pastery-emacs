@@ -10,4 +10,11 @@
             :parser 'json-read
             :sync t)))
 
+(defun pastery-get-paste (api-key paste-id)
+  (request-response-data
+   (request (format "%s/api/paste/%s/" pastery-url paste-id)
+            :params `(("api_key" . ,api-key))
+            :parser 'json-read
+            :sync t)))
+
 (provide 'pastery-api)

@@ -23,5 +23,26 @@
                (let ((pastery-url "localhost:8080"))
                  (pastery-get-paste-list "wrong-api-key")))
               :to-equal '((result . "error")
-                          (error_msg . "\"api_key\" must be a valid API key."))))))
-
+                          (error_msg . "\"api_key\" must be a valid API key.")))))
+  (describe "pastery-get-paste"
+    (it "returns an error if the API key is wrong"
+      (expect (with-debug-server
+               (let ((pastery-url "localhost:8080"))
+                 (pastery-get-paste "wrong-api-key" "bzgkgz")))
+              :to-equal '((result . "error")
+                          (error_msg . "\"api_key\" must be a valid API key."))))
+    (it "returns an error if the paste ID is missing"
+      (expect (with-debug-server
+               (let ((pastery-url "localhost:8080"))
+                 (pastery-get-paste "mykey" "notpresent")))
+              :to-equal '((pastes . []))))
+    (it "returns the correct paste"
+      (expect (with-debug-server
+               (let ((pastery-url "localhost:8080"))
+                 (pastery-get-paste "mykey" "bzgkgz")))
+              :to-equal '((pastes . [(( id . "bzgkgz")
+                                      (title . "Sample data bis")
+                                      (url . "https://www.pastery.net/bzgkgz/")
+                                      (language . "ttl")
+                                      (duration . 43196)
+                                      (body . "def my_function(x):\n    return x + 42\n\nprint(my_function(0))\n"))]))))))
