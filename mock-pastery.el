@@ -2,8 +2,7 @@
 
 (defun read-sample (name)
   (with-temp-buffer
-    (insert-file (format "test-data/%s" name))
-    (goto-char (point-min))
+    (insert-file-contents (format "test-data/%s" name))
     (forward-line)
     (buffer-substring-no-properties (point) (point-max))))
 
