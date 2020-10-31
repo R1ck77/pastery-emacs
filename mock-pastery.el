@@ -16,9 +16,6 @@
 (defun 200-answer (name)
   (cons 200 (read-sample name)))
 
-(defun stop-mock-server ()
-  (interactive)
-  (ws-stop-all))
 
 (defun wrong-api-key (headers)
   (let ((api-key (cdr (assoc "api_key" headers))))
@@ -66,6 +63,10 @@
       (debug-message "Size of the pending message is: %d" (length (oref request pending)))
       (if (= 100 (car code-content))          
           :keep-alive))))
+
+(defun stop-mock-server ()
+  (interactive)
+  (ws-stop-all))
 
 (defun start-mock-server (&optional try-kill)
   (interactive)
