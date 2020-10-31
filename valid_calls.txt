@@ -1,0 +1,23 @@
+
+
+# Save a new paste
+$ curl -X POST 'localhost:8080/api/paste/?api_key=mykey&duration=1&title=My+Post&language=delphi&max_views=12'
+{"id": "hmueky", "title": "Sample data", "url": "https://www.pastery.net/hmueky/", "language": "ttl", "duration": 43199}
+
+# Delete a Paste: success
+$ curl -X DELETE localhost:8080/api/paste/bzgkgz/?api_key=mykey
+{"result": "success"}
+
+# Delete a paste: wrong key
+$ curl -X DELETE localhost:8080/api/paste/foo/?api_key=mykey
+{"result": "error", "error_msg": "That paste does not belong to you."}
+
+# Get saved paste
+$ curl localhost:8080/api/paste/bzgkgz/?api_key=mykey
+{"pastes": [{"id": "bzgkgz", "title": "Sample data bis", "url": "https://www.pastery.net/bzgkgz/", "language": "ttl", "duration": 43196, "body": "def my_function(x):\n    return x + 42\n\nprint(my_function(0))\n"}]}
+
+# List of pastes
+$ curl localhost:8080/api/paste/?api_key=mykey
+{"pastes": [{"id": "bzgkgz", "title": "Sample data bis", "url": "https://www.pastery.net/bzgkgz/", "language": "ttl", "duration": 43199}, {"id": "hmueky", "title": "Sample data", "url": "https://www.pastery.net/hmueky/", "language": "ttl", "duration": 43196}]}
+
+
