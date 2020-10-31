@@ -1,5 +1,12 @@
 (require 'web-server)
 
+(defvar show-debug-messages nil
+  "Set to truthy if you want to see ugly messages about the communication")
+
+(defun debug-message (&rest arguments)
+  (if show-debug-messages
+      (apply #'message arguments)))
+
 (defun read-sample (name)
   (with-temp-buffer
     (insert-file-contents (format "test-data/%s" name))
@@ -22,7 +29,7 @@
       (200-answer "invalid_api_key.txt")))))
 
 (defun mock-pastery-response (headers)
-  (message "Dealing my cards…")
+  (debug-message "Dealing my cards…")
   (or (wrong-api-key headers)
       (let ((delete-value (alist-get ':DELETE headers))
             (get-value (alist-get ':GET headers))
@@ -48,7 +55,7 @@
           )))))
 
 (defun mock-pastery-handler (request)
-  (message "REQUEST!")
+  (debug-message "REQUEST!")
   (setq last-request request)
   (with-slots (process headers) request
     (let ((code-content (mock-pastery-response headers)))
@@ -56,7 +63,7 @@
                           '("Content Type" . "application/json")
                           (cons "Content-Length" (number-to-string (length (cdr code-content)))))
       (process-send-string process (cdr code-content))
-      (message "Size of the pending message is: %d" (length (oref request pending)))
+      (debug-message "Size of the pending message is: %d" (length (oref request pending)))
       (if (= 100 (car code-content))          
           :keep-alive))))
 
