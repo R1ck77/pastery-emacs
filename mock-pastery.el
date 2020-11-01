@@ -16,7 +16,6 @@
 (defun 200-answer (name)
   (cons 200 (read-sample name)))
 
-
 (defun wrong-api-key (headers)
   (let ((api-key (cdr (assoc "api_key" headers))))
     (cond
