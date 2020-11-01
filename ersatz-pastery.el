@@ -5,7 +5,7 @@
 
 (defvar ersatz-storage '())
 
-(cl-defstruct paste duration title language max_views content)
+(cl-defstruct paste duration title language max_views body)
 
 ;;; Generic utility functions
 (defun ersatz-path-surrounded-with-/? (path)
@@ -40,8 +40,21 @@
 (defun ersatz-handle-post (path headers) "POST")
 
 ;;; GET
-(defun ersatz-handle-get (path headers) "GET")
+(defun ersatz-handle-get-paste (id)
+  "GET_PASTE"
+  )
 
+(defun ersatz-handle-get-list ()
+  "GET_LIST"
+  )
+
+(defun ersatz-handle-get (path headers)
+  (if-let (id (ersatz-get-paste-id path))
+      (if (string-empty-p id)
+          (ersatz-handle-get-list)
+        (ersatz-handle-get-paste id))
+      ;;; TODO/FIXME handle this
+    (error "INVALID SOMETHING. Handle this")))
 
 ;;; DELETE
 (defun ersatz-delete-paste (id)
