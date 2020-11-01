@@ -7,6 +7,29 @@
 
 (cl-defstruct paste duration title language max_views content)
 
+;;; Generic utility functions
+(defun ersatz-path-surrounded-with-/? (path)
+  (let ((characters (string-to-list path)))
+   (and (= ?/ (car characters))
+        (= ?/ (car (last characters))))))
+
+(defun ersatz-remove-first-last-characters (path)
+  (substring path 1 (1- (length path))))
+
+(defun ersatz-get-path-components (path)
+  "Returns a list with the path components or nil if the path is not valid"
+  (when (ersatz-path-surrounded-with-/? path)
+    (let* ((path-without-trailing-/ (ersatz-remove-first-last-characters path))
+           (path-components (split-string path-without-trailing-/ "/"))
+           (interesting-components (-take 3 path-components)))
+      (when (equal '("api" "paste") (-take 2 interesting-components))
+        interesting-components))))
+
+(defun ersatz-get-paste-id (path)
+  "Returns nil if the path is invalid, or string with the ID (empty string meaning \"no ID present\")"
+  (when-let ((path-components (ersatz-get-path-components path)))
+    (or (elt path-components 2) "")))
+
 ;;; POST
 (defun ersatz-create-paste-id ()
   "Take the last 6 characters of the integer UNIX time"
@@ -25,20 +48,8 @@
   (let ((paste (cdr (assoc id ersatz-storage))))
     (if (not paste)
         "{\"result\": \"error\", \"error_msg\": \"That paste does not belong to you.\"}"
-      (assoc-delete-all id ersatz-storage)
+      (setq ersatz-storage (assoc-delete-all id ersatz-storage))
       "{\"result\": \"success\"}")))
-
-(defun ersatz-ensure-valid-path (path-legs)
-  (unless (equal '("api" "paste") (-take 2 path-legs))
-    ;;; TODO/FIXME check how pastery handles this
-    (error "Invalid URL specification")))
-
-(defun ersatz-get-paste-id (path)
-  (unless (= ?/ (car (last (string-to-list path))))
-    (error "Invalid path")) ;;; TODO/FIXME check how pastery handles this
-  (let ((legs (-take 3 (cdr (split-string (substring path 0 (1- (length path))) "/")))))
-    (ersatz-ensure-valid-path legs)
-    (elt legs 2)))
 
 (defun ersatz-handle-delete (path)
   (ersatz-delete-paste (ersatz-get-paste-id path)))
