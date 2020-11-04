@@ -23,6 +23,9 @@
     (puthash "duration" (paste-duration paste) table)
     table))
 
+(defun ersatz-paste-to-json (id paste)
+  (json-encode (ersatz-paste-to-table id paste)))
+
 (defun ersatz-create-pastes-list (id-list)
   (--map (ersatz-paste-to-table (car it) (cdr it))
          (--filter (cdr it)
@@ -72,10 +75,29 @@ Invalid ID are silently discarded"
     (substring (reverse timestamp-as-string)
                0 6)))
 
+;; TODO/FIXME functions/macros
+(defun ersatz-create-paste-arguments (headers)
+  (let ((arguments))
+    (if-let ((title (assoc "title" headers)))
+      (setq arguments (append (list :title (cdr title)) arguments)))
+
+    (if-let ((url (assoc "url" headers)))
+      (setq arguments (append (list :url (cdr url)) arguments)))
+
+    ;;; TODO/FIXME what do I do with invalid languages?
+    (if-let ((language (assoc "language" headers)))
+      (setq arguments (append (list :language (cdr language)) arguments)))
+
+    ;;; TODO/FIXME what do I do with invalid durations?
+    (if-let ((duration (assoc "duration" headers)))
+      (setq arguments (append (list :duration (string-to-number (cdr duration))) arguments)))
+    arguments))
+
 (defun ersatz-handle-post (path headers)
   (let* ((id (ersatz-create-paste-id))
-        (paste (new-paste)))
-   (setq ersatz-storage (cons (cons id paste) ersatz-storage))))
+         (paste (apply #'new-paste (ersatz-create-paste-arguments headers))))
+    (setq ersatz-storage (cons (cons id paste) ersatz-storage))
+    (ersatz-paste-to-json id paste)))
 
 ;;; GET
 (defun ersatz-handle-get-paste (id)
