@@ -1,11 +1,46 @@
 (require 'web-server)
 (require 'cl)
+(require 'json)
 
 (defvar valid-keys '("key1" "key2"))
 
 (defvar ersatz-storage '())
 
-(cl-defstruct paste duration title language max_views body)
+;;; Paste definition
+(cl-defstruct (paste (:constructor new-paste))
+  (duration 43200 :read-only t)
+  (title "" :read-only t)
+  (language nil :read-only t)
+  (max_views 0 :read-only t)
+  (body "" :read-only t))
+
+(defun ersatz-paste-to-table (id paste)
+  (let ((table (make-hash-table)))
+    (puthash "id" id table)
+    (puthash "title" (paste-title paste) table)
+    (puthash "url" (format "https://www.pastery.net/%s/" id) table) ; TODO/FIXME mock part
+    (puthash "language" (paste-language paste) table)
+    (puthash "duration" (paste-duration paste) table)
+    table))
+
+(defun ersatz-create-pastes-list (id-list)
+  (--map (ersatz-paste-to-table (car it) (cdr it))
+         (--filter (cdr it)
+                   (--map (cons it (alist-get it ersatz-storage))
+                          id-list))))
+
+(defun ersatz-pastes-to-json (id-list)
+  "Returns a JSON representation of the valid pastes in the storage with the specified ID
+
+Invalid ID are silently discarded"
+  (let ((table (make-hash-table))
+        (pastes (or (ersatz-create-pastes-list id-list) [])))
+    (puthash "pastes" pastes table)
+    (json-encode table)))
+
+(defun ersatz-storage-to-json ()
+  "Returns a JSON representation of the whole storage"
+  (ersatz-pastes-to-json (--map (car it) ersatz-storage)))
 
 ;;; Generic utility functions
 (defun ersatz-path-surrounded-with-/? (path)
@@ -41,12 +76,10 @@
 
 ;;; GET
 (defun ersatz-handle-get-paste (id)
-  "GET_PASTE"
-  )
+  (ersatz-pastes-to-json (list id)))
 
 (defun ersatz-handle-get-list ()
-  "GET_LIST"
-  )
+  (ersatz-storage-to-json))
 
 (defun ersatz-handle-get (path headers)
   (if-let (id (ersatz-get-paste-id path))
