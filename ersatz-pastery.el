@@ -86,7 +86,7 @@ Invalid ID are silently discarded"
       (if (string-empty-p id)
           (ersatz-handle-get-list)
         (ersatz-handle-get-paste id))
-      ;;; TODO/FIXME handle this
+      ;;; TODO/FIXME handle this 301 no content
     (error "INVALID SOMETHING. Handle this")))
 
 ;;; DELETE
@@ -98,6 +98,7 @@ Invalid ID are silently discarded"
       "{\"result\": \"success\"}")))
 
 (defun ersatz-handle-delete (path)
+  ;;; TODO/FIXME handle the 301 case
   (ersatz-delete-paste (ersatz-get-paste-id path)))
 
 (defun read-sample (name)
