@@ -10,7 +10,7 @@
 (cl-defstruct (paste (:constructor new-paste))
   (duration 43200 :read-only t)
   (title "" :read-only t)
-  (language nil :read-only t)
+  (language "text" :read-only t)
   (max_views 0 :read-only t)
   (body "" :read-only t))
 
