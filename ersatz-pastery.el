@@ -26,7 +26,7 @@
 (defun ersatz-create-pastes-list (id-list)
   (--map (ersatz-paste-to-table (car it) (cdr it))
          (--filter (cdr it)
-                   (--map (cons it (alist-get it ersatz-storage))
+                   (--map (assoc it ersatz-storage)
                           id-list))))
 
 (defun ersatz-pastes-to-json (id-list)
@@ -72,7 +72,10 @@ Invalid ID are silently discarded"
     (substring (reverse timestamp-as-string)
                0 6)))
 
-(defun ersatz-handle-post (path headers) "POST")
+(defun ersatz-handle-post (path headers)
+  (let* ((id (ersatz-create-paste-id))
+        (paste (new-paste)))
+   (setq ersatz-storage (cons (cons id paste) ersatz-storage))))
 
 ;;; GET
 (defun ersatz-handle-get-paste (id)
@@ -120,7 +123,7 @@ Invalid ID are silently discarded"
         (and get-path (ersatz-handle-get get-path headers)))
       (let ((delete-path (alist-get ':DELETE headers)))
         (and delete-path (ersatz-handle-delete delete-path)))
-      (let ((post-path (alist-post ':POST headers)))
+      (let ((post-path (alist-get ':POST headers)))
         (and post-path (ersatz-handle-post post-path headers)))))
 
 (defun ersatz-pastery-handler (request)
