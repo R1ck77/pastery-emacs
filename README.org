@@ -1,6 +1,6 @@
 * An interface to the "pastery.net" API in Emacs (kata/exercise)
 
-The code started as /"A (to be) quick and dirty elisp interfacing with the [[https://www.pastery.net/][pastery API]]"/ and evolved over time:
+The code started as "A (to be) quick and dirty elisp interfacing with the [[https://www.pastery.net/][pastery API]]" and evolved over time:
 
   - from the simple mode, to be tested with a mock pastery for testing purposes (in order to do TDD)
   - to the mode plus the creation of an ersatz pastery server for testing that mostly works

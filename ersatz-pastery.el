@@ -1,6 +1,7 @@
 (require 'web-server)
 (require 'cl)
 (require 'json)
+(require 'ersatz-constants)
 
 ;;; TODO/FIXME
 ;;; if I specified the wrong keys with any call i get:
@@ -8,73 +9,8 @@
 ;;; 422 per missing api_key
 ;;; 301 per path invalido
 
-(defconst valid-languages '("autodetect" "bash" "c" "cpp" "csharp" "css" "html"
-                            "java" "js" "json" "lua" "markdown" "objective-c"
-                            "perl" "php" "python" "swift" "text" "autodetect"
-                            "abap" "ada" "agda" "ahk" "alloy" "antlr" "antlr-as"
-                            "antlr-cpp" "antlr-csharp" "antlr-java" "antlr-objc"
-                            "antlr-perl" "antlr-python" "antlr-ruby" "apacheconf"
-                            "apl" "applescript" "as" "as3" "aspectj" "aspx-cs"
-                            "aspx-vb" "asy" "at" "autoit" "awk" "basemake" "bat"
-                            "bbcode" "befunge" "blitzbasic" "blitzmax" "boo"
-                            "brainfuck" "bro" "bugs" "c-objdump" "ca65" "cbmbas"
-                            "ceylon" "cfc" "cfengine3" "cfm" "cfs" "chai" "chapel"
-                            "cheetah" "cirru" "clay" "clojure" "clojurescript"
-                            "cmake" "cobol" "cobolfree" "coffee-script" "common-lisp"
-                            "console" "control" "coq" "cpp-objdump" "croc"
-                            "cryptol" "css+django" "css+erb" "css+genshitext"
-                            "css+lasso" "css+mako" "css+mozpreproc" "css+myghty"
-                            "css+php" "css+smarty" "cucumber" "cuda" "cypher"
-                            "cython" "d" "d-objdump" "dart" "delphi" "dg" "diff"
-                            "django" "docker" "dpatch" "dtd" "duel" "dylan"
-                            "dylan-console" "dylan-lid" "ebnf" "ec" "ecl" "eiffel"
-                            "elixir" "erb" "erl" "erlang" "evoque" "factor"
-                            "fan" "fancy" "felix" "fortran" "foxpro" "fsharp"
-                            "gap" "gas" "genshi" "genshitext" "glsl" "gnuplot"
-                            "go" "golo" "gooddata-cl" "gosu" "groff" "groovy"
-                            "gst" "haml" "handlebars" "haskell" "haxeml" "html+cheetah"
-                            "html+django" "html+evoque" "html+genshi" "html+handlebars"
-                            "html+lasso" "html+mako" "html+myghty" "html+php"
-                            "html+smarty" "html+twig" "html+velocity" "http"
-                            "hx" "hybris" "hylang" "i6t" "idl" "idris" "iex"
-                            "igor" "inform6" "inform7" "ini" "io" "ioke" "ipython2"
-                            "ipython3" "ipythonconsole" "irc" "isabelle" "jade"
-                            "jags" "jasmin" "javascript+mozpreproc" "jlcon"
-                            "js+cheetah" "js+django" "js+erb" "js+genshitext"
-                            "js+lasso" "js+mako" "js+myghty" "js+php" "js+smarty"
-                            "jsonld" "jsp" "julia" "kal" "kconfig" "koka" "kotlin"
-                            "lagda" "lasso" "lcry" "lean" "lhs" "lidr" "lighty"
-                            "limbo" "liquid" "live-script" "llvm" "logos" "logtalk"
-                            "lsl" "make" "mako" "maql" "mask" "mason" "mathematica"
-                            "matlab" "matlabsession" "minid" "modelica" "modula2"
-                            "monkey" "moocode" "moon" "mozhashpreproc" "mozpercentpreproc"
-                            "mql" "mscgen" "mupad" "mxml" "myghty" "mysql"
-                            "nasm" "nemerle" "nesc" "newlisp" "newspeak" "nginx"
-                            "nimrod" "nit" "nixos" "nsis" "numpy" "objdump"
-                            "objdump-nasm" "objective-c++" "objective-j" "ocaml"
-                            "octave" "ooc" "opa" "openedge" "pan" "pawn" "perl6"
-                            "pig" "pike" "plpgsql" "postgresql" "postscript"
-                            "pot" "pov" "powershell" "prolog" "properties"
-                            "protobuf" "psql" "puppet" "py3tb" "pycon" "pypylog"
-                            "pytb" "python3" "qbasic" "qml" "racket" "ragel"
-                            "ragel-c" "ragel-cpp" "ragel-d" "ragel-em" "ragel-java"
-                            "ragel-objc" "ragel-ruby" "raw" "rb" "rbcon" "rconsole"
-                            "rd" "rebol" "red" "redcode" "registry" "resource"
-                            "rexx" "rhtml" "robotframework" "rql" "rsl" "rst"
-                            "rust" "sass" "scala" "scaml" "scheme" "scilab"
-                            "scss" "shell-session" "slim" "smali" "smalltalk"
-                            "smarty" "sml" "snobol" "sourceslist" "sp" "sparql"
-                            "spec" "splus" "sql" "sqlite3" "squidconf" "ssp"
-                            "stan" "swig" "systemverilog" "tads3" "tcl" "tcsh"
-                            "tea" "tex" "textile" "todotxt" "trac-wiki" "treetop"
-                            "ts" "twig" "urbiscript" "vala" "vb.net" "vctreestatus"
-                            "velocity" "verilog" "vgl" "vhdl" "vim" "xml" "xml+cheetah"
-                            "xml+django" "xml+erb" "xml+evoque" "xml+lasso"
-                            "xml+mako" "xml+myghty" "xml+php" "xml+smarty"
-                            "xml+velocity" "xquery" "xslt" "xtend" "xul+mozpreproc"
-                            "yaml" "yaml+jinja" "zephir"))
-
-(defvar valid-keys '("key1" "key2"))
+(defvar ersatz-valid-keys nil
+  "Keys accepted by the current server")
 
 (defvar ersatz-storage '())
 
@@ -255,7 +191,7 @@ Invalid ID are silently discarded"
   (let ((key (assoc "api_key" headers)))
     (if (not key)
         (read-sample "missing_api_key.txt")
-        (if (find key valid-keys :test 'equal )
+        (if (find key ersatz-valid-keys :test 'equal )
             (read-sample "invalid_api_key.txt")))))
 
 (defun ersatz-handle-request (process headers)
@@ -281,19 +217,12 @@ Invalid ID are silently discarded"
   (interactive)
   (ws-stop-all))
 
-(defun start-ersatz-server (&optional try-kill)
+(defun start-ersatz-server (valid-keys &optional try-kill)
   (interactive)
+  (setq ersatz-valid-keys valid-keys)
   (when try-kill
     (stop-ersatz-server))
   (setq ersatz-storage '())
   (ws-start #'ersatz-pastery-handler 8080))
 
-(defmacro with-debug-server (&rest forms)
-  (let ((result (make-symbol "result")))
-    `(progn
-       (start-ersatz-server t)
-       (let ((,result (progn ,@forms)))
-         (stop-ersatz-server)
-         ,result))))
-
-(provide 'esatz-pastery)
+(provide 'ersatz-pastery)
