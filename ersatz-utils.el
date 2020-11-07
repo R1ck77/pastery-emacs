@@ -47,11 +47,17 @@
 (defun ersatz-double-quotes-to-quotes (string)
   (ersatz-replace-in-string "\"" "'" string))
 
+(defun ersatz-format-extra-keys (keys)
+  (-reduce-from #'concat ""
+                (-interpose ", " (-map #'ersatz-double-quotes-to-quotes
+                                       (-map #'json-encode
+                                             (-sort #'string< keys))))))
+
 (defun ersatz-unexpected-keys-message (headers header-keys unexpected-keys)
   (let ((keys-json-repr (json-encode
                          (ersatz-alist-to-hash-table
-                          (--map (list it (vector (cadr (assoc it headers)))) header-keys))))
-        (unexp-keys-formatted (-reduce-from #'concat "" (-map #'ersatz-double-quotes-to-quotes (-map #'json-encode (-sort #'string< unexpected-keys))))))
+                          (--map (list it (vector (car (assoc it headers)))) header-keys))))
+        (unexp-keys-formatted (ersatz-format-extra-keys unexpected-keys)))
     (format "Wrong keys %s in %s"
             unexp-keys-formatted
             (ersatz-double-quotes-to-quotes keys-json-repr))))

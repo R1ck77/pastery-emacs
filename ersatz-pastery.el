@@ -72,7 +72,7 @@
     headers
     (ersatz-add-url
      headers
-     (ersatz-add-title headers arguments)))))
+     (ersatz-add-title headers nil)))))
 
 (defun ersatz-paste-from-arguments (arguments)
   (let ((paste (apply #'new-paste arguments)))
@@ -131,11 +131,17 @@
 (defun ersatz-handle-request (process headers)
   (or (ersatz-get-api-key-error headers)
       (let ((get-path (alist-get ':GET headers)))
-        (cons 200 (and get-path (ersatz-handle-get get-path headers))))
+        (and get-path
+             (or (ersatz-validate-key-names headers '("api_key"))
+                 (cons 200 (ersatz-handle-get get-path headers)))))
       (let ((delete-path (alist-get ':DELETE headers)))
-        (cons 200 (and delete-path (ersatz-handle-delete delete-path))))
+        (and delete-path
+             (or (ersatz-validate-key-names headers '("api_key"))
+                 (cons 200 (ersatz-handle-delete delete-path)))))
       (let ((post-path (alist-get ':POST headers)))
-        (and post-path (ersatz-handle-post post-path headers)))))
+        (and post-path
+             (or (ersatz-validate-key-names headers '("api_key" "title" "url" "language" "duration"))
+                 (ersatz-handle-post post-path headers))))))
 
 (defun ersatz-pastery-handler (request)
   (with-slots (process headers) request
