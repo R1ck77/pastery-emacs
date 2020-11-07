@@ -1,7 +1,10 @@
 (require 'web-server)
 (require 'cl)
 (require 'json)
+(require 'subr-x) ; (eval-when-compile (require 'subr-x)) could work too
 (require 'ersatz-constants)
+(require 'ersatz-paste)
+(require 'ersatz-utils)
 
 ;;; TODO/FIXME
 ;;; if I specified the wrong keys with any call i get:
@@ -13,75 +16,6 @@
   "Keys accepted by the current server")
 
 (defvar ersatz-storage '())
-
-;;; Paste definition
-(cl-defstruct (paste (:constructor new-paste))
-  (duration 43200 :read-only t)
-  (title "" :read-only t)
-  (language "text" :read-only t)
-  (max_views 0 :read-only t)
-  (body "" :read-only t))
-
-(defun ersatz-paste-to-table (id paste)
-  (let ((table (make-hash-table)))
-    (puthash "id" id table)
-    (puthash "title" (paste-title paste) table)
-    (puthash "url" (format "https://www.pastery.net/%s/" id) table) ; TODO/FIXME mock part
-    (puthash "language" (paste-language paste) table)
-    (puthash "duration" (paste-duration paste) table)
-    table))
-
-(defun ersatz-paste-to-json (id paste)
-  (json-encode (ersatz-paste-to-table id paste)))
-
-(defun ersatz-create-pastes-list (id-list)
-  (--map (ersatz-paste-to-table (car it) (cdr it))
-         (--filter (cdr it)
-                   (--map (assoc it ersatz-storage)
-                          id-list))))
-
-(defun ersatz-pastes-to-json (id-list)
-  "Returns a JSON representation of the valid pastes in the storage with the specified ID
-
-Invalid ID are silently discarded"
-  (let ((table (make-hash-table))
-        (pastes (or (ersatz-create-pastes-list id-list) [])))
-    (puthash "pastes" pastes table)
-    (json-encode table)))
-
-(defun ersatz-storage-to-json ()
-  "Returns a JSON representation of the whole storage"
-  (ersatz-pastes-to-json (--map (car it) ersatz-storage)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Generic utility functions
-(defun ersatz-path-surrounded-with-/? (path)
-  (let ((characters (string-to-list path)))
-   (and (= ?/ (car characters))
-        (= ?/ (car (last characters))))))
-
-(defun ersatz-remove-first-last-characters (path)
-  (substring path 1 (1- (length path))))
-
-(defun ersatz-get-path-components (path)
-  "Returns a list with the path components or nil if the path is not valid"
-  (when (ersatz-path-surrounded-with-/? path)
-    (let* ((path-without-trailing-/ (ersatz-remove-first-last-characters path))
-           (path-components (split-string path-without-trailing-/ "/"))
-           (interesting-components (-take 3 path-components)))
-      (when (equal '("api" "paste") (-take 2 interesting-components))
-        interesting-components))))
-
-(defun ersatz-get-paste-id (path)
-  "Returns nil if the path is invalid, or string with the ID (empty string meaning \"no ID present\")"
-  (when-let ((path-components (ersatz-get-path-components path)))
-    (or (elt path-components 2) "")))
-
-(defun ersatz-create-json-error (message)
-  (let ((map (make-hash-table)))
-    (puthash "result" "error" map)
-    (puthash "error_msg" message map)
-    (json-encode map)))
 
 ;;;;;;;;
 ;;; POST
