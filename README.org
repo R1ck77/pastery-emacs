@@ -1,11 +1,19 @@
 * An interface to the "pastery.net" API in Emacs (kata/exercise)
 
-A (to be) quick and dirty elisp interfacing with the [[https://www.pastery.net/][pastery API]]
+The code started as _"A (to be) quick and dirty elisp interfacing with the [[https://www.pastery.net/][pastery API]]"_ and evolved, in time:
+
+  - to the creation of a mock pastery for testing purposes (in order to do TDD)
+  - to the creation of an ersatz pastery server for testing
+  - and finally, to the creation of a replacement of the service in Emacs LISP
+
+The basic idea is that I will create the service as a replacement to be used stand-alone, and the Emacs mode will be able to connect to either the web version or the local one.
+
+By the way, make sure to check the [[https://www.pastery.net][actual Pastery]]: it's pretty neat!
+
+** Disclaimer
 
 I do not own the Pastery web service and neither I'm affiliated with it.
 
 I am not aiming at providing a professional tool of sorts: this is just meant as an exercise to interface with external API with Emacs and test/mock web-services.
-
-Full Documentation/description TBD.
 
 
