@@ -1,4 +1,5 @@
-(provide 'ersatz-constants)
+
+(defconst ersatz-pastery-server-port 8080)
 
 (defconst valid-languages '("autodetect" "bash" "c" "cpp" "csharp" "css" "html"
                             "java" "js" "json" "lua" "markdown" "objective-c"
@@ -65,3 +66,5 @@
                             "xml+mako" "xml+myghty" "xml+php" "xml+smarty"
                             "xml+velocity" "xquery" "xslt" "xtend" "xul+mozpreproc"
                             "yaml" "yaml+jinja" "zephir"))
+
+(provide 'ersatz-constants)

@@ -11,7 +11,8 @@
   (let ((table (make-hash-table)))
     (puthash "id" id table)
     (puthash "title" (paste-title paste) table)
-    (puthash "url" (format "https://www.pastery.net/%s/" id) table) ; TODO/FIXME mock part
+    ;; This isn't really accurate if the server is started on a different interface
+    (puthash "url" (format "http://localhost:%d/%s/" ersatz-pastery-server-port id) table)
     (puthash "language" (paste-language paste) table)
     (puthash "duration" (paste-duration paste) table)
     table))

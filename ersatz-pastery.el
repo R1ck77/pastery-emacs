@@ -155,6 +155,6 @@
   (when try-kill
     (stop-ersatz-server))
   (setq ersatz-storage '())
-  (ws-start #'ersatz-pastery-handler 8080))
+  (ws-start #'ersatz-pastery-handler ersatz-pastery-server-port))
 
 (provide 'ersatz-pastery)
