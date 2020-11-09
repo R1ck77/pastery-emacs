@@ -34,6 +34,11 @@
     (puthash "error_msg" message map)
     (json-encode map)))
 
+;; Integer conversion. I'm quite surprised that I have to do this myself
+(defun ersatz-to-integer (string)
+  (if (string-match-p "^[+-]?[0-9]*$" string)
+      (string-to-number string)))
+
 ;; Keys validation
 (defun ersatz-replace-in-string (what with in)
   "SO for the win!"

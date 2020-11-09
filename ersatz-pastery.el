@@ -25,14 +25,6 @@
     (substring (reverse timestamp-as-string)
                0 6)))
 
-;;; TODO/FIXME isn't there a better way? Sad…
-(defun ersatz-to-integer (string)
-  "Doesn't work for values like 0100 or 00, good enough for testing"
-  (let ((converted (truncate (string-to-number string))))
-    (if (and (>= converted 0)
-             (equal (number-to-string converted) string))
-        converted)))
-
 (defun ersatz-add-duration-or-string (headers arguments)
   "Return the duration specified by the user as an integer, or a string if the value is not a valid non-negative integer"
   (if-let ((duration (cdr (assoc "duration" headers))))
