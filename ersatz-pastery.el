@@ -67,16 +67,20 @@
      (ersatz-add-title headers nil)))))
 
 (defun ersatz-paste-from-arguments (arguments)
-  (let ((paste (apply #'new-paste arguments)))
-    ;;; TODO/FIXME cons cons cons cons?
-    (setq ersatz-storage (cons (cons (ersatz-create-paste-id) paste) ersatz-storage))
-    (ersatz-paste-to-json id paste)))
+  (let* ((paste (apply #'new-paste arguments))
+         (alist-element (cons (ersatz-create-paste-id) paste)))
+    (setq ersatz-storage (cons alist-element ersatz-storage))
+    id))
+
+(defun ersatz-paste-json-from-storage (id)
+  (ersatz-paste-to-json id (cdr (assoc id ersatz-storage))))
 
 (defun ersatz-handle-post (path headers) 
   (let ((arguments-or-error (ersatz-create-paste-arguments headers)))
     (if (stringp arguments-or-error)
         (cons 422 (ersatz-create-json-error arguments-or-error))
-      (cons 200 (ersatz-paste-from-arguments argument-or-error)))))
+      (let ((new-id (ersatz-paste-from-arguments arguments-or-error)))
+       (cons 200 (ersatz-paste-json-from-storage new-id))))))
 
 ;;;;;;;
 ;;; GET
