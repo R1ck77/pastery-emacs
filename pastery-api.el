@@ -30,13 +30,21 @@
             :parser 'json-read
             :sync t)))
 
-(defun pastery/put-paste (api-key title content)
-  (request-response-data
-   (request (format "%s/api/paste/" pastery-url)
-            :type "POST"
-            :params `(("api_key" . ,api-key)
-                      ("title" . ,title))
-            :parser 'json-read
-            :sync t)))
+;;; TODO/FIXME macro
+(defun pastery/add--optional-params (params &optional language duration max_views)
+  (if language (setq params `(("language" . ,language) . ,params)))
+  (if duration (setq params `(("duration" . ,duration) . ,params)))
+  (if max_views (setq params `(("max_views" . ,max_views) . ,params)))
+  params)
+
+(defun pastery/put-paste (api-key title content &optional language duration max_views)
+  (let ((fixed-params `(("api_key" . ,api-key)
+                        ("title" . ,title))))
+    (request-response-data
+     (request (format "%s/api/paste/" pastery-url)
+              :type "POST"
+              :params (pastery/add--optional-params fixed-params language duration max_views)
+              :parser 'json-read
+              :sync t))))
 
 (provide 'pastery-api)
