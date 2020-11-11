@@ -9,3 +9,11 @@
        (let ((,result (progn ,@forms)))
          (stop-ersatz-server)
          ,result))))
+
+(defun ersatz-debug--delete-pastes ()
+  (setq ersatz-storage nil))
+
+(defun ersatz-debug--set-pastes (&rest pastes)
+  (setq ersatz-storage pastes))
+
+(provide 'ersatz-pastery-debug)
