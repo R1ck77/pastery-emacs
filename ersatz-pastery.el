@@ -6,12 +6,6 @@
 (require 'ersatz-paste)
 (require 'ersatz-utils)
 
-;;; TODO/FIXME
-;;; if I specified the wrong keys with any call i get:
-;;; 422 - {"result": "error", "error_msg": "Wrong keys 'foobar' in {'api_key': ['R89j54QSLjgL6kM2pbewzGgg5wkFASfS'], 'foobar': ['12']}"}
-;;; 422 per missing api_key
-;;; 301 per path invalido
-
 (defvar ersatz-valid-keys nil
   "Keys accepted by the current server")
 
@@ -28,7 +22,7 @@
 (defun ersatz-add-duration-or-string (headers arguments)
   "Return the duration specified by the user as an integer, or a string if the value is not a valid non-negative integer"
   (if-let ((duration (cdr (assoc "duration" headers))))
-      (let ((converted (ersatz-to-integer (cdr duration))))
+      (let ((converted (ersatz-to-integer duration)))
         (if (not converted)
             "\"duration\" should be a positive integer number of minutes before the paste is deleted."
           (append (list :duration converted) arguments)))))
@@ -68,7 +62,8 @@
 
 (defun ersatz-paste-from-arguments (arguments)
   (let* ((paste (apply #'new-paste arguments))
-         (alist-element (cons (ersatz-create-paste-id) paste)))
+         (id (ersatz-create-paste-id))
+         (alist-element (cons id paste)))
     (setq ersatz-storage (cons alist-element ersatz-storage))
     id))
 
@@ -78,9 +73,9 @@
 (defun ersatz-handle-post (path headers) 
   (let ((arguments-or-error (ersatz-create-paste-arguments headers)))
     (if (stringp arguments-or-error)
-        (cons 422 (ersatz-create-json-error arguments-or-error))
+        (cons HTTP-unprocessable-entity (ersatz-create-json-error arguments-or-error))
       (let ((new-id (ersatz-paste-from-arguments arguments-or-error)))
-       (cons 200 (ersatz-paste-json-from-storage new-id))))))
+       (cons HTTP-ok (ersatz-paste-json-from-storage new-id))))))
 
 ;;;;;;;
 ;;; GET
@@ -117,37 +112,57 @@
     (forward-line)
     (buffer-substring-no-properties (point) (point-max))))
 
+;;; TODO/FIXME duplicated code with the path splitting function
+(defun ersatz-get-path-error (path)
+  "Returns nil if the path 'looks ok' or (301 . '') if it does not"
+  (let ((components (split-string path "/")))
+    (unless
+     (and
+      (string= "" (car components))
+      (string= "api" (elt components 1))
+      (string= "paste" (elt components 2))
+      (string= "" (car (last components)))
+      (<= (length components) 5))
+     (cons HTTP-moved-permanently ""))))
+
 (defun ersatz-get-api-key-error (headers)
   (let ((key (assoc "api_key" headers)))
     (if (not key)
-        (read-sample "missing_api_key.txt")
-        (if (find key ersatz-valid-keys :test 'equal )
-            (read-sample "invalid_api_key.txt")))))
+        (cons HTTP-unprocessable-entity (ersatz-create-json-error "Missing keys: 'api_key'"))
+        (unless (find (cdr key) ersatz-valid-keys :test 'equal )
+            (cons HTTP-unprocessable-entity (ersatz-create-json-error "\"api_key\" must be a valid API key."))))))
 
-(defun ersatz-handle-request (process headers)
-  (or (ersatz-get-api-key-error headers)
-      (let ((get-path (alist-get ':GET headers)))
-        (and get-path
-             (or (ersatz-validate-key-names headers '("api_key"))
-                 (cons 200 (ersatz-handle-get get-path headers)))))
-      (let ((delete-path (alist-get ':DELETE headers)))
-        (and delete-path
-             (or (ersatz-validate-key-names headers '("api_key"))
-                 (cons 200 (ersatz-handle-delete delete-path)))))
-      (let ((post-path (alist-get ':POST headers)))
-        (and post-path
-             (or (ersatz-validate-key-names headers '("api_key" "title" "url" "language" "duration"))
-                 (ersatz-handle-post post-path headers))))))
+(defun ersatz-handle-request (process headers)  
+  (or       
+   (let ((get-path (alist-get ':GET headers)))
+     (and get-path
+          (or (ersatz-get-api-key-error headers)
+              (ersatz-get-path-error get-path)
+              (ersatz-validate-key-names headers '("api_key"))
+              (cons HTTP-ok (ersatz-handle-get get-path headers)))))
+   (let ((delete-path (alist-get ':DELETE headers)))
+     (and delete-path
+          (or (ersatz-get-api-key-error headers)
+              (ersatz-get-path-error delete-path)
+              (ersatz-validate-key-names headers '("api_key"))
+              (cons HTTP-ok (ersatz-handle-delete delete-path)))))
+   (let ((post-path (alist-get ':POST headers)))
+     (and post-path
+          (or (ersatz-get-api-key-error headers)
+              (ersatz-get-path-error post-path)
+              (ersatz-validate-key-names headers '("api_key" "title" "url" "language" "duration"))
+              (ersatz-handle-post post-path headers))))
+   (cons HTTP-moved-permanently "")))
 
 (defun ersatz-pastery-handler (request)
   (with-slots (process headers) request
     (let* ((result (ersatz-handle-request process headers))
-           (http-code (car result))
-           (code-content (cdr result)))
-      (ws-response-header process http-code
-                          '("Content Type" . "application/json")
-                          (cons "Content-Length" (number-to-string (length code-content))))
-      (process-send-string process code-content))))
+           (HTTP-code (car result))
+           (message (cdr result)))
+      (ws-response-header process HTTP-code
+                          (cons "Content Type" "application/json")
+                          (cons "Content-Length" (number-to-string (length message))))
+      (process-send-string process message))))
 
 (defun stop-ersatz-server ()
   (interactive)

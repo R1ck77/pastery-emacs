@@ -1,6 +1,10 @@
 
 (defconst ersatz-pastery-server-port 8080)
 
+(defconst HTTP-unprocessable-entity 422)
+(defconst HTTP-moved-permanently 301)
+(defconst HTTP-ok 200)
+
 (defconst valid-languages '("autodetect" "bash" "c" "cpp" "csharp" "css" "html"
                             "java" "js" "json" "lua" "markdown" "objective-c"
                             "perl" "php" "python" "swift" "text" "autodetect"
