@@ -1,2 +1,0 @@
-curl -X GET https://www.pastery.net/api/paste/
-{"result": "error", "error_msg": "Missing keys: 'api_key'"}
