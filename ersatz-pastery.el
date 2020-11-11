@@ -19,6 +19,14 @@
     (substring (reverse timestamp-as-string)
                0 6)))
 
+(defun ersatz-add-max-views-or-string (headers arguments)
+  "Return the max-views specified by the user as an integer, or a string if the value is not a valid non-negative integer"
+  (if-let ((max-views (cdr (assoc "max_views" headers))))
+      (let ((converted (ersatz-to-integer max-views)))
+        (if (not converted)
+            "\"max_views\" should be a non-negative integer number of views before the paste is deleted."
+          (append (list :max_views converted) arguments)))))
+
 (defun ersatz-add-duration-or-string (headers arguments)
   "Return the duration specified by the user as an integer, or a string if the value is not a valid non-negative integer"
   (if-let ((duration (cdr (assoc "duration" headers))))
@@ -52,13 +60,16 @@
 
 (defun ersatz-create-paste-arguments (headers)
   "Extract the arguments from the headers, returns an alist of header values or a string with an error"
-  (ersatz-add-duration-or-string
-   headers
-   (ersatz-add-language
-    headers
-    (ersatz-add-url
-     headers
-     (ersatz-add-title headers nil)))))
+  (let ((partial-headers-or-error (ersatz-add-duration-or-string
+                                   headers
+                                   (ersatz-add-language
+                                    headers
+                                    (ersatz-add-url
+                                     headers
+                                     (ersatz-add-title headers nil))))))
+    (if (stringp partial-headers-or-error)
+        partial-headers-or-error
+      (ersatz-add-max-views-or-string headers partial-headers-or-error))))
 
 (defun ersatz-paste-from-arguments (arguments)
   (let* ((paste (apply #'new-paste arguments))
@@ -150,7 +161,7 @@
      (and post-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error post-path)
-              (ersatz-validate-key-names headers '("api_key" "title" "url" "language" "duration"))
+              (ersatz-validate-key-names headers '("api_key" "title" "url" "language" "duration" "max_views"))
               (ersatz-handle-post post-path headers))))
    (cons HTTP-moved-permanently "")))
 

@@ -8,7 +8,7 @@
 
       (expect (with-debug-server
                (ersatz-debug--set-pastes (list
-                                          (cons "id1" (new-paste :title "title1" :language "ttl" :max-views 12))
+                                          (cons "id1" (new-paste :title "title1" :language "ttl" :max_views 12))
                                           (cons "id2" (new-paste :title "title2" :language "c" :duration 100))))
                (let ((pastery-url "localhost:8080"))
                  (pastery/get-paste-list "key1")))
@@ -16,7 +16,7 @@
                                       (title . "title1")
                                       (url . "https://localhost:8080/id1/")
                                       (language . "ttl")
-                                      (max-views . 12)
+                                      (max_views . 12)
                                       (duration . 43199))
                                      ((id . "id2")
                                       (title . "title2")
