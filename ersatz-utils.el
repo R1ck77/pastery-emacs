@@ -1,3 +1,4 @@
+(require 'dash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Generic utility functions
