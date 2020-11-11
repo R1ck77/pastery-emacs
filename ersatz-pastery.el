@@ -6,6 +6,9 @@
 (require 'ersatz-paste)
 (require 'ersatz-utils)
 
+;;; TODO/FIXME duration and max_views not accounted at all
+;;; TODO/FIXME wrong permissions! The pastes should be stored by key!!!
+
 (defvar ersatz-valid-keys nil
   "Keys accepted by the current server")
 
