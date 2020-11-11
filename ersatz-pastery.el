@@ -49,12 +49,6 @@
     (append (list :language (ersatz-validate-language user-specified-language))
             arguments)))
 
-(defun ersatz-add-url (headers arguments)
-  "Return a new set of arguments with the url specified by the user"
-  (if-let ((url (cdr (assoc "url" headers))))
-      (append (list :url url) arguments)
-    arguments))
-
 (defun ersatz-add-title (headers arguments)
   "Return a new set of arguements with the title specified by the user"
   (if-let ((title (cdr (assoc "title" headers))))
@@ -67,9 +61,7 @@
                                    headers
                                    (ersatz-add-language
                                     headers
-                                    (ersatz-add-url
-                                     headers
-                                     (ersatz-add-title headers nil))))))
+                                    (ersatz-add-title headers nil)))))
     (if (stringp partial-headers-or-error)
         partial-headers-or-error
       (ersatz-add-max-views-or-string headers partial-headers-or-error))))
@@ -164,7 +156,7 @@
      (and post-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error post-path)
-              (ersatz-validate-key-names headers '("api_key" "title" "url" "language" "duration" "max_views"))
+              (ersatz-validate-key-names headers '("api_key" "title" "language" "duration" "max_views"))
               (ersatz-handle-post post-path headers))))
    (cons HTTP-moved-permanently "")))
 
