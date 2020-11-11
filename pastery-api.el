@@ -1,7 +1,8 @@
 (require 'json)
 (require 'request)
 
-(defvar pastery-url "http://www.pastery.net")
+;;(defvar pastery-url "https://www.pastery.net")
+(defvar pastery-url "http://localhost:8080")
 
 (defun pastery/get-paste-list (api-key)
   (request-response-data

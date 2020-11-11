@@ -5,7 +5,6 @@
 (describe "pastery-api"
   (describe "pastery/get-paste-list"
     (it "returns a list of pastes if the api key is correct"
-
       (expect (with-debug-server
                (ersatz-debug--set-pastes (list
                                           (cons "id1" (new-paste :title "title1" :language "ttl" :max_views 12))
@@ -70,7 +69,7 @@
                  (pastery/delete-paste "mykey" "bzgkgz")))
               :to-equal '((result . "success")))))
   (xdescribe "pastery/put-paste"
-        (it "returns an error if the API key is wrong"
+    (it "returns an error if the API key is wrong"
       (expect (with-debug-server
                (let ((pastery-url "localhost:8080"))
                  (pastery/put-paste "wrong-api-key" "title" "content")))
