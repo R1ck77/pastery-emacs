@@ -15,6 +15,7 @@
     (puthash "url" (format "http://localhost:%d/%s/" ersatz-pastery-server-port id) table)
     (puthash "language" (paste-language paste) table)
     (puthash "duration" (paste-duration paste) table)
+    (puthash "max_views" (paste-max_views paste) table)
     table))
 
 (defun ersatz-paste-to-json (id paste)
