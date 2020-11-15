@@ -80,6 +80,7 @@
               :to-equal '((result . "error")
                           (error_msg . "\"api_key\" must be a valid API key."))))))
 
+;;; TODO/FIXME it would be nice to register all this stuff as a matcher!
 (defun compare-assoc-lists (expected actual)
   (and
    (= (length expected)
