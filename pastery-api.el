@@ -8,14 +8,14 @@
   (request-response-data
    (request (format "%s/api/paste/" pastery-url)
             :params `(("api_key" . ,api-key))
-            :parser 'json-read
+            :parser #'json-read
             :sync t)))
 
 (defun pastery/get-paste (api-key paste-id)
   (let ((raw-json (request-response-data
                    (request (format "%s/api/paste/%s/" pastery-url paste-id)
                             :params `(("api_key" . ,api-key))
-                            :parser 'json-read
+                            :parser #'json-read
                             :sync t))))
     (let ((pastes (alist-get 'pastes raw-json)))
       (if pastes
@@ -27,7 +27,7 @@
    (request (format "%s/api/paste/%s/" pastery-url paste-id)
             :type "DELETE"
             :params `(("api_key" . ,api-key))
-            :parser 'json-read
+            :parser #'json-read
             :sync t)))
 
 ;;; TODO/FIXME macro
@@ -44,7 +44,7 @@
      (request (format "%s/api/paste/" pastery-url)
               :type "POST"
               :params (pastery/add--optional-params fixed-params language duration max_views)
-              :parser 'json-read
+              :parser #'json-read
               :sync t))))
 
 (provide 'pastery-api)
