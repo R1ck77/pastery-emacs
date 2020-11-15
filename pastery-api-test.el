@@ -7,25 +7,25 @@
   (describe "pastery/get-paste-list"
     (it "returns a list of pastes if the api key is correct"
       (let ((result (with-debug-server
-                (ersatz-debug--set-pastes (cons "id1" (new-paste :title "title1" :language "ttl" :max_views 12))
-                                          (cons "id2" (new-paste :title "title2" :language "c" :duration 100)))
-                (let ((pastery-url "localhost:8080"))
-                  (pastery/get-paste-list "key1")))))        
+                     (ersatz-debug--set-pastes (cons "id1" (new-paste :title "title1" :language "ttl" :max_views 12))
+                                               (cons "id2" (new-paste :title "title2" :language "c" :duration 100)))
+                     (let ((pastery-url "localhost:8080"))
+                       (pastery/get-paste-list "key1")))))        
         (expect
-         (compare-paste-results result
-                         '((pastes . [((id . "id1")
-                                       (title . "title1")
-                                       (url . "http://localhost:8080/id1/")
-                                       (language . "ttl")
-                                       (max_views . 12)
-                                       (duration . 43200))
-                                      ((id . "id2")
-                                       (title . "title2")
-                                       (url . "http://localhost:8080/id2/")
-                                       (language . "c")
-                                       (max_views . 0)
-                                       (duration . 100))])))
-               :to-be t)))
+         (compare-paste-results '((pastes . [((id . "id1")
+                                              (title . "title1")
+                                              (url . "http://localhost:8080/id1/")
+                                              (language . "ttl")
+                                              (max_views . 12)
+                                              (duration . 43200))
+                                             ((id . "id2")
+                                              (title . "title2")
+                                              (url . "http://localhost:8080/id2/")
+                                              (language . "c")
+                                              (max_views . 0)
+                                              (duration . 100))]))
+                                result)
+         :to-be t)))
     (xit "returns an error if the wrong api key is provided"
       (expect (with-debug-server
                (let ((pastery-url "localhost:8080"))
@@ -80,17 +80,24 @@
               :to-equal '((result . "error")
                           (error_msg . "\"api_key\" must be a valid API key."))))))
 
+(defun compare-assoc-lists (expected actual)
+  (and
+   (= (length expected)
+      (length actual))
+   (--all? (let ((key (car it)))
+             (equal (cdr it) (cdr (assoc key actual))))
+           expected)))
+
 (defun compare-paste (id expected-paste actual-paste)
   (not
-   (unless (equal expected-paste actual-paste)
-     (message (format "Comparison failed for id %s:\nExpected: %s\nActual: %s\n" id expected-paste actual-paste)))))
+   (unless (compare-assoc-lists expected-paste actual-paste)
+         (message (format "Comparison failed for id %s:\nExpected: %s\nActual: %s\n" id expected-paste actual-paste)))))
 
 (defun compare-paste-lists (expected-list actual-list)
   (--all? (not (not it))
           (--map (let* ((id (cdr (assoc 'id it)))
-                        (expected-paste (cdr it))
+                        (expected-paste it)
                         (actual-paste (car (--filter (string= (cdr (assoc 'id it)) id) actual-list))))
-                   (message "ID: %s ACTUAL: %s EXPECTED: %s" id actual-paste expected-paste)
                    (compare-paste id expected-paste actual-paste))
                  expected-list)))
 
