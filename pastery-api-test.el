@@ -23,6 +23,7 @@
                                        (title . "title2")
                                        (url . "http://localhost:8080/id2/")
                                        (language . "c")
+                                       (max_views . 0)
                                        (duration . 100))])))
                :to-be t)))
     (xit "returns an error if the wrong api key is provided"
@@ -79,22 +80,25 @@
               :to-equal '((result . "error")
                           (error_msg . "\"api_key\" must be a valid API key."))))))
 
-(defun compare-paste-lists (pastes-list-a pastes-list-b)
-  (let ((intersection (cl-intersection pastes-list-a pastes-list-b :test #'equal))
-        (union (cl-union pastes-list-a pastes-list-b :test #'equal)))
-    (let ((result (= (length intersection) (length union))))
-      (when (not result)
-        (message (format "Comparison failed:\nexpected: %s\ngot     : %s\ndifference: %s"
-                         pastes-list-a
-                         pastes-list-b
-                         (cl-set-difference union intersection :test #'equal))))
-      result)))
+(defun compare-paste (id expected-paste actual-paste)
+  (not
+   (unless (equal expected-paste actual-paste)
+     (message (format "Comparison failed for id %s:\nExpected: %s\nActual: %s\n" id expected-paste actual-paste)))))
+
+(defun compare-paste-lists (expected-list actual-list)
+  (--all? (not (not it))
+          (--map (let* ((id (cdr (assoc 'id it)))
+                        (expected-paste (cdr it))
+                        (actual-paste (car (--filter (string= (cdr (assoc 'id it)) id) actual-list))))
+                   (message "ID: %s ACTUAL: %s EXPECTED: %s" id actual-paste expected-paste)
+                   (compare-paste id expected-paste actual-paste))
+                 expected-list)))
 
 (defun pastes-vector-as-list (pastes-list)
   (append (cdr (assoc 'pastes pastes-list)) '()))
 
-(defun compare-paste-results (pastes-list-a pastes-list-b)
-  (and (= (length pastes-list-a)
-          (length pastes-list-b))
-       (compare-paste-lists (pastes-vector-as-list pastes-list-a)
-                            (pastes-vector-as-list pastes-list-b))))
+(defun compare-paste-results (expected-pastes-list actual-pastes-list)
+  (and (= (length expected-pastes-list)
+          (length actual-pastes-list))       
+       (compare-paste-lists (pastes-vector-as-list expected-pastes-list)
+                            (pastes-vector-as-list actual-pastes-list))))
