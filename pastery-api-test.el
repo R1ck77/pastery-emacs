@@ -3,6 +3,17 @@
 (require 'ersatz-pastery-debug)
 (require 'cl)
 
+
+(defun association-list-matcher (expected actual)
+  (and
+   (= (length expected)
+      (length actual))
+   (--all? (let ((key (car it)))
+             (equal (cdr it) (cdr (assoc key actual))))
+           expected)))
+
+(buttercup-define-matcher-for-binary-function :to-be-same-alist association-list-matcher)
+
 (describe "pastery-api"
   (describe "pastery/get-paste-list"
     (it "returns a list of pastes if the api key is correct"
@@ -26,12 +37,12 @@
                                               (duration . 100))]))
                                 result)
          :to-be t)))
-    (xit "returns an error if the wrong api key is provided"
+    (it "returns an error if the wrong api key is provided"
       (expect (with-debug-server
                (let ((pastery-url "localhost:8080"))
                  (pastery/get-paste-list "wrong-api-key")))
-              :to-equal '((result . "error")
-                          (error_msg . "\"api_key\" must be a valid API key.")))))
+              :to-be-same-alist '((result . "error")
+                                  (error_msg . "\"api_key\" must be a valid API key.")))))
   (xdescribe "pastery/get-paste"
     (it "returns an error if the API key is wrong"
       (expect (with-debug-server
@@ -81,17 +92,9 @@
                           (error_msg . "\"api_key\" must be a valid API key."))))))
 
 ;;; TODO/FIXME it would be nice to register all this stuff as a matcher!
-(defun compare-assoc-lists (expected actual)
-  (and
-   (= (length expected)
-      (length actual))
-   (--all? (let ((key (car it)))
-             (equal (cdr it) (cdr (assoc key actual))))
-           expected)))
-
 (defun compare-paste (id expected-paste actual-paste)
   (not
-   (unless (compare-assoc-lists expected-paste actual-paste)
+   (unless (association-list-matcher expected-paste actual-paste)
          (message (format "Comparison failed for id %s:\nExpected: %s\nActual: %s\n" id expected-paste actual-paste)))))
 
 (defun compare-paste-lists (expected-list actual-list)
