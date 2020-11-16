@@ -1,28 +1,8 @@
 (require 'buttercup)
 (require 'pastery-api)
 (require 'ersatz-pastery-debug)
+(require 'pastery-test-utils)
 (require 'cl)
-
-
-(defun association-list-matcher (actual expected)
-  (and
-   (= (length expected)
-      (length actual))
-   (--all? (let ((key (car it)))
-             (equal (cdr it) (cdr (assoc key actual))))
-           expected)))
-
-(buttercup-define-matcher-for-binary-function :to-be-same-alist association-list-matcher)
-
-(defun compare-paste (actual-paste expected-paste)
-  (not
-   (unless (association-list-matcher expected-paste actual-paste)
-     (message (format "Comparison failed for id %s:\nExpected: %s\nActual: %s\n" (cdr (assoc 'id expected-paste)) expected-paste actual-paste)))))
-
-(defun paste-list-matcher (actual expected)
-  (compare-paste actual expected))
-
-(buttercup-define-matcher-for-binary-function :to-be-paste-like paste-list-matcher)
 
 (describe "pastery-api"
   (describe "pastery/get-paste-list"
@@ -107,22 +87,3 @@
                  (pastery/put-paste "wrong-api-key" "title" "content")))
               :to-be-same-alist '((result . "error")
                                   (error_msg . "\"api_key\" must be a valid API key."))))))
-
-;;; TODO/FIXME it would be nice to register all this stuff as a matcher!
-
-(defun compare-paste-lists (expected-list actual-list)
-  (--all? (not (not it))
-          (--map (let* ((id (cdr (assoc 'id it)))
-                        (expected-paste it)
-                        (actual-paste (car (--filter (string= (cdr (assoc 'id it)) id) actual-list))))
-                   (compare-paste expected-paste actual-paste))
-                 expected-list)))
-
-(defun pastes-vector-as-list (pastes-list)
-  (append (cdr (assoc 'pastes pastes-list)) '()))
-
-(defun compare-paste-results (expected-pastes-list actual-pastes-list)
-  (and (= (length expected-pastes-list)
-          (length actual-pastes-list))       
-       (compare-paste-lists (pastes-vector-as-list expected-pastes-list)
-                            (pastes-vector-as-list actual-pastes-list))))
