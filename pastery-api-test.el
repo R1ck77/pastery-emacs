@@ -93,10 +93,12 @@
                  (pastery/delete-paste "key1" "missing_paste")))
               :to-be-same-alist '((result . "error")
                                   (error_msg . "That paste does not belong to you."))))
-    (xit "returns a laconic \"success\" on a sunny day"
+    (it "returns a laconic \"success\" on a sunny day"
       (expect (with-debug-server
+               (ersatz-debug--set-pastes (cons "id1" (new-paste))
+                                         (cons "id2" (new-paste)))
                (let ((pastery-url "localhost:8080"))
-                 (pastery/delete-paste "mykey" "bzgkgz")))
+                 (pastery/delete-paste "key1" "id2")))
               :to-equal '((result . "success")))))
   (describe "pastery/put-paste"
     (it "returns an error if the API key is wrong"
