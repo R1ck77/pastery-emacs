@@ -47,7 +47,7 @@
                (let ((pastery-url "localhost:8080"))
                  (pastery/get-paste "key1" "notpresent")))
               :to-equal nil))
-    (it "returns the paste on a sunny day" ; Create a version with a long text!
+    (it "returns the paste on a sunny day"
       (expect (with-debug-server
                (ersatz-debug--set-pastes (cons "id1" (new-paste :title "title1" :language "ttl" :max_views 12))
                                          (cons "id2" (new-paste :title "title2" :language "c" :duration 100 :body "body")))
@@ -59,7 +59,20 @@
                                   (language . "c")
                                   (duration . 100)
                                   (max_views . 0)
-                                  (body . "body")))))
+                                  (body . "body"))))
+    (it "can return a rather long paste"
+      (let ((large-body (create-random-string 100000)))
+        (expect (with-debug-server
+                 (ersatz-debug--set-pastes (cons "id" (new-paste :title "title" :language "c" :max_views 12 :duration 100 :body large-body)))
+                 (let ((pastery-url "localhost:8080"))
+                   (pastery/get-paste "key1" "id")))
+                :to-be-paste-like `((id . "id")
+                                    (title . "title")
+                                    (url . "http://localhost:8080/id/")
+                                    (language . "c")
+                                    (duration . 100)
+                                    (max_views . 12)
+                                    (body . ,large-body))))))
   (describe "pastery/delete-paste"
     (it "returns an error if the API key is wrong"
       (expect (with-debug-server

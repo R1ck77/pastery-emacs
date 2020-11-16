@@ -1,4 +1,5 @@
 (require 'buttercup)
+(require 'dash)
 
 (defun association-list-matcher (actual expected)
   (and
@@ -38,5 +39,11 @@
        (compare-paste-lists (pastes-vector-as-list expected-pastes-list)
                             (pastes-vector-as-list actual-pastes-list))))
 
+(defun random-letter ()
+  "Generate a random character in the range [90, 65]"
+  (char-to-string (+ 65 (random 26))))
+
+(defun create-random-string (&optional length)
+  (apply #'concat (--map (random-letter) (number-sequence 1 length))))
 
 (provide 'pastery-test-utils)
