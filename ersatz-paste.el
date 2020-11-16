@@ -16,6 +16,7 @@
     (puthash "language" (paste-language paste) table)
     (puthash "duration" (paste-duration paste) table)
     (puthash "max_views" (paste-max_views paste) table)
+    (puthash "body" (paste-body paste) table)
     table))
 
 (defun ersatz-paste-to-json (id paste)
