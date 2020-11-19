@@ -5,16 +5,23 @@
 
 (defvar content-accumulator nil)
 
-(defun echo (process text)
-  (ws-response-header process 200
-                      (cons "Content Type" "application/text")
-                      (cons "Content-Length" (number-to-string (length text))))
-  (process-send-string process text))
+(defun compute-size (data-list)
+  (-reduce-from #'+ 0 (-map #'length data-list)))
 
-(defun handle-continue (expected-content-size process string)
-  (setq content-accumulator (concat content-accumulator string))
-  (if (>= (length content-accumulator) expected-content-size)
-      (echo process content-accumulator)))
+(defun echo-all (process data-list)
+  (let ((size (compute-size data-list)))
+    (ws-response-header process 200
+                        (cons "Content Type" "application/text")
+                        (cons "Content-Length" (number-to-string size)))
+    (--each (reverse data-list) (process-send-string process it))))
+
+(defun echo (process text)
+  (echo-all process (list text)))
+
+(defun handle-continue-data (expected-content-size process string)
+  (push string content-accumulator)
+  (if (>= (compute-size content-accumulator) expected-content-size)
+      (echo-all process content-accumulator)))
 
 (defun is-100-continue? (headers)
   (string= "100-continue"
@@ -23,7 +30,7 @@
 
 (defun setup-filter (process content-length)
   (setq content-accumulator nil)
-  (set-process-filter process (-partial #'handle-continue content-length)))
+  (set-process-filter process (-partial #'handle-continue-data content-length)))
 
 (defun test-server-handler (request)
   (with-slots (process headers) request
