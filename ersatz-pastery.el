@@ -76,11 +76,13 @@
 (defun ersatz-paste-json-from-storage (id)
   (ersatz-paste-to-json id (cdr (assoc id ersatz-storage))))
 
-(defun ersatz-handle-post (path headers) 
-  (let ((arguments-or-error (ersatz-create-paste-arguments headers)))
+(defun ersatz-handle-post (process path headers) 
+  (let ((body (caar (last headers)))
+        (arguments-or-error (ersatz-create-paste-arguments headers)))
     (if (stringp arguments-or-error)
         (cons HTTP-unprocessable-entity (ersatz-create-json-error arguments-or-error))
-      (let ((new-id (ersatz-paste-from-arguments arguments-or-error)))
+      (let ((new-id (ersatz-paste-from-arguments (append (list :body body) arguments-or-error))))
+        ;; TODO/FIXME check if therere is an expect-continue!
        (cons HTTP-ok (ersatz-paste-json-from-storage new-id))))))
 
 ;;;;;;;
@@ -157,7 +159,7 @@
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error post-path)
               (ersatz-validate-key-names headers '("api_key" "title" "language" "duration" "max_views"))
-              (ersatz-handle-post post-path headers))))
+              (ersatz-handle-post process post-path headers))))
    (cons HTTP-moved-permanently "")))
 
 (defun ersatz-pastery-handler (request)

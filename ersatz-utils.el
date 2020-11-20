@@ -83,7 +83,7 @@
   "Return nil if no error is detected or a cons cell if extra keys where found
 
 The cons cell is in the form (422 . error_message)"
-  (let* ((header-keys (-filter #'stringp (-map #'car headers)))
+  (let* ((header-keys (-filter #'stringp (-map #'car (-take (1- (length headers)) headers))))
         (unexpected-keys (ersatz-get-unexpected-keys header-keys valid-keys)))
     (and unexpected-keys
          (cons 422 (ersatz-create-json-error (ersatz-unexpected-keys-message headers header-keys unexpected-keys))))))
