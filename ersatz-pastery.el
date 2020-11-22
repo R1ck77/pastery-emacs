@@ -5,6 +5,7 @@
 (require 'ersatz-constants)
 (require 'ersatz-paste)
 (require 'ersatz-utils)
+(require 'pastery-consts)
 
 ;;; TODO/FIXME duration and max_views not accounted at all
 ;;; TODO/FIXME wrong permissions! The pastes should be stored by key!!!
@@ -39,7 +40,7 @@
 
 (defun ersatz-add-max-views-or-string (headers arguments)
   "Return the max-views specified by the user as an integer, or a string if the value is not a valid non-negative integer"
-  (if-let ((max-views (cdr (assoc "max_views" headers))))
+  (if-let ((max-views (cdr (assoc pastery-max-views-key headers))))
       (let ((converted (ersatz-to-integer max-views)))
         (if (not converted)
             "\"max_views\" should be a non-negative integer number of views before the paste is deleted."
@@ -47,7 +48,7 @@
 
 (defun ersatz-add-duration-or-string (headers arguments)
   "Return the duration specified by the user as an integer, or a string if the value is not a valid non-negative integer"
-  (if-let ((duration (cdr (assoc "duration" headers))))
+  (if-let ((duration (cdr (assoc pastery-duration-key headers))))
       (let ((converted (ersatz-to-integer duration)))
         (if (not converted)
             "\"duration\" should be a positive integer number of minutes before the paste is deleted."
@@ -60,13 +61,13 @@
 
 (defun ersatz-add-language (headers arguments)
   "Return the arguments with the language specified by the user, or text if none"
-  (let ((user-specified-language (cdr (assoc "language" headers))))
+  (let ((user-specified-language (cdr (assoc pastery-language-key headers))))
     (append (list :language (ersatz-validate-language user-specified-language))
             arguments)))
 
 (defun ersatz-add-title (headers arguments)
   "Return a new set of arguements with the title specified by the user"
-  (if-let ((title (cdr (assoc "title" headers))))
+  (if-let ((title (cdr (assoc pastery-title-key headers))))
       (append (list :title title) arguments)
     arguments))
 
@@ -162,13 +163,13 @@
       (new-server-answer :HTTP-code HTTP-moved-permanently))))
 
 (defun ersatz-get-api-key-error (headers)
-  (let ((key (assoc "api_key" headers)))
+  (let ((key (assoc pastery-api-key headers)))
     (if (not key)
         (new-server-answer :HTTP-code HTTP-unprocessable-entity
                            :message (ersatz-create-json-error "Missing keys: 'api_key'"))
       (unless (find (cdr key) ersatz-valid-keys :test 'equal )
         (new-server-answer :HTTP-code HTTP-unprocessable-entity
-                           :message (ersatz-create-json-error "\"api_key\" must be a valid API key."))))))
+                           :message (ersatz-create-json-error (format "%S must be a valid API key." pastery-api-key)))))))
 
 (defun ersatz-create-response (headers)
   (or       
@@ -176,19 +177,23 @@
      (and get-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error get-path)
-              (ersatz-validate-key-names headers '("api_key"))
+              (ersatz-validate-key-names headers (list pastery-api-key))
               (new-server-answer :message (ersatz-handle-get get-path headers)))))
    (let ((delete-path (alist-get ':DELETE headers)))
      (and delete-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error delete-path)
-              (ersatz-validate-key-names headers '("api_key"))
+              (ersatz-validate-key-names headers (list pastery-api-key))
               (new-server-answer :message (ersatz-handle-delete delete-path)))))
    (let ((post-path (alist-get ':POST headers)))
      (and post-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error post-path)
-              (ersatz-validate-key-names headers '("api_key" "title" "language" "duration" "max_views"))
+              (ersatz-validate-key-names headers (list pastery-api-key
+                                                       pastery-title-key
+                                                       pastery-language-key
+                                                       pastery-duration-key
+                                                       pastery-max-views-key))
               (ersatz-handle-post post-path headers))))
    (new-server-answer :HTTP-code HTTP-moved-permanently)))
 
