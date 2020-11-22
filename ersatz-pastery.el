@@ -14,6 +14,21 @@
 
 (defvar ersatz-storage '())
 
+(cl-defstruct (ersatz-answer (:constructor new-server-answer))
+  (keep-alive nil :read-only t)
+  (HTTP-code HTTP-ok :read-only t)
+  (message "" :read-only t))
+
+(defun ersatz-send-answer (answer process)
+  (if (ersatz-answer-keep-alive answer)
+      (prog1 :keep-alive
+        (ws-response-header process 100))
+    (let ((message (ersatz-answer-message answer)))
+      (ws-response-header process (ersatz-answer-HTTP-code answer)
+                          (cons "Content Type" "application/json")
+                          (cons "Content-Length" (number-to-string (length message))))
+      (process-send-string process message))))
+
 ;;;;;;;;
 ;;; POST
 (defun ersatz-create-paste-id ()
@@ -87,12 +102,13 @@
   (let ((continue-requested (ersatz-100-continue? headers))
         (arguments-or-error (ersatz-create-paste-arguments headers)))
     (if (stringp arguments-or-error)
-        (list HTTP-unprocessable-entity (ersatz-create-json-error arguments-or-error))
+        (new-server-answer :HTTP-code HTTP-unprocessable-entity
+                           :message (ersatz-create-json-error arguments-or-error))
       (if-let ((body (and (not (ersatz-100-continue? headers))
                           (concat (caar (last headers)) "\n"))))
-        (progn
-          (new-id (ersatz-paste-from-arguments (append (list :body body) arguments-or-error)))
-          (list HTTP-ok (ersatz-paste-json-from-storage new-id)))
+          (progn
+            (new-id (ersatz-paste-from-arguments (append (list :body body) arguments-or-error)))
+            (new-server-answer :message (ersatz-paste-json-from-storage new-id)))
         ;; TODO/FIXME not handled
         ;; <-- add callback registration with currying here
         :keep-alive))))
@@ -137,20 +153,22 @@
   "Returns nil if the path 'looks ok' or (301 . '') if it does not"
   (let ((components (split-string path "/")))
     (unless
-     (and
-      (string= "" (car components))
-      (string= "api" (elt components 1))
-      (string= "paste" (elt components 2))
-      (string= "" (car (last components)))
-      (<= (length components) 5))
-     (list HTTP-moved-permanently ""))))
+        (and
+         (string= "" (car components))
+         (string= "api" (elt components 1))
+         (string= "paste" (elt components 2))
+         (string= "" (car (last components)))
+         (<= (length components) 5))
+      (new-server-answer :HTTP-code HTTP-moved-permanently))))
 
 (defun ersatz-get-api-key-error (headers)
   (let ((key (assoc "api_key" headers)))
     (if (not key)
-        (list HTTP-unprocessable-entity (ersatz-create-json-error "Missing keys: 'api_key'"))
-        (unless (find (cdr key) ersatz-valid-keys :test 'equal )
-          (list HTTP-unprocessable-entity (ersatz-create-json-error "\"api_key\" must be a valid API key."))))))
+        (new-server-answer :HTTP-code HTTP-unprocessable-entity
+                           :message (ersatz-create-json-error "Missing keys: 'api_key'"))
+      (unless (find (cdr key) ersatz-valid-keys :test 'equal )
+        (new-server-answer :HTTP-code HTTP-unprocessable-entity
+                           :message (ersatz-create-json-error "\"api_key\" must be a valid API key."))))))
 
 (defun ersatz-create-response (headers)
   (or       
@@ -159,33 +177,29 @@
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error get-path)
               (ersatz-validate-key-names headers '("api_key"))
-              (list HTTP-ok (ersatz-handle-get get-path headers)))))
+              (new-server-answer :message (ersatz-handle-get get-path headers)))))
    (let ((delete-path (alist-get ':DELETE headers)))
      (and delete-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error delete-path)
               (ersatz-validate-key-names headers '("api_key"))
-              (list HTTP-ok (ersatz-handle-delete delete-path)))))
+              (new-server-answer :message (ersatz-handle-delete delete-path)))))
    (let ((post-path (alist-get ':POST headers)))
      (and post-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error post-path)
               (ersatz-validate-key-names headers '("api_key" "title" "language" "duration" "max_views"))
               (ersatz-handle-post post-path headers))))
-   (list HTTP-moved-permanently "")))
+   (new-server-answer :HTTP-code HTTP-moved-permanently)))
 
 (defun ersatz-handle-request (headers send-response-f)
-  (apply send-response-f (ersatz-create-response headers)))
-
-(defun ersatz-send-response (process HTTP-code message)
-  (ws-response-header process HTTP-code
-                      (cons "Content Type" "application/json")
-                      (cons "Content-Length" (number-to-string (length message))))
-  (process-send-string process message))
+  (funcall send-response-f (ersatz-create-response headers)))
 
 (defun ersatz-pastery-handler (request)
   (with-slots (process headers) request
-    (ersatz-handle-request headers (-partial #'ersatz-send-response process))))
+    (ersatz-handle-request headers
+                           (lambda (answer)
+                             (ersatz-send-answer answer process)))))
 
 (defun stop-ersatz-server ()
   (interactive)
