@@ -1,10 +1,11 @@
 (require 'web-server)
 (require 'cl)
 (require 'json)
-(require 'subr-x) ; (eval-when-compile (require 'subr-x)) could work too
+(eval-when-compile (require 'subr-x))
 (require 'ersatz-constants)
 (require 'ersatz-paste)
 (require 'ersatz-utils)
+(require 'ersatz-continue-handling)
 (require 'pastery-consts)
 
 ;;; TODO/FIXME duration and max_views not accounted at all
@@ -97,22 +98,20 @@
            (downcase
             (or (cdr (assoc :EXPECT headers)) ""))))
 
-(defun ersatz-continue-callback (something process string))
-
 (defun ersatz-handle-post (process path headers) 
   (let ((continue-requested (ersatz-100-continue? headers))
-        (arguments-or-error (ersatz-create-paste-arguments headers)))
+        (arguments-or-error (ersatz-create-paste-arguments headers)))  ;;; TODO/FIXME hideous™ reuse of symbol
     (if (stringp arguments-or-error)
         (new-server-answer :HTTP-code HTTP-unprocessable-entity
                            :message (ersatz-create-json-error arguments-or-error))
       (if-let ((body (and (not (ersatz-100-continue? headers))
                           (concat (caar (last headers)) "\n"))))
-          (progn
-            (new-id (ersatz-paste-from-arguments (append (list :body body) arguments-or-error)))
-            (new-server-answer :message (ersatz-paste-json-from-storage new-id)))
-        ;; TODO/FIXME not handled
-        ;; <-- add callback registration with currying here
-        :keep-alive))))
+          (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments (append (list :body body) arguments-or-error))))
+        (set-process-filter process
+                            (-partial #'ersatz-continue-callback
+                                      (string-to-number (cdr (assoc :CONTENT-LENGTH headers)))
+                                      arguments-or-error))
+        (new-server-answer :keep-alive t)))))
 
 ;;;;;;;
 ;;; GET
@@ -171,7 +170,7 @@
         (new-server-answer :HTTP-code HTTP-unprocessable-entity
                            :message (ersatz-create-json-error (format "%S must be a valid API key." pastery-api-key)))))))
 
-(defun ersatz-create-response (headers)
+(defun ersatz-create-response (process headers)
   (or       
    (let ((get-path (alist-get ':GET headers)))
      (and get-path
@@ -194,15 +193,16 @@
                                                        pastery-language-key
                                                        pastery-duration-key
                                                        pastery-max-views-key))
-              (ersatz-handle-post post-path headers))))
+              (ersatz-handle-post process post-path headers))))
    (new-server-answer :HTTP-code HTTP-moved-permanently)))
 
-(defun ersatz-handle-request (headers send-response-f)
-  (funcall send-response-f (ersatz-create-response headers)))
+(defun ersatz-handle-request (process headers send-response-f)
+  (funcall send-response-f (ersatz-create-response process headers)))
 
 (defun ersatz-pastery-handler (request)
   (with-slots (process headers) request
-    (ersatz-handle-request headers
+    (ersatz-handle-request process
+                           headers
                            (lambda (answer)
                              (ersatz-send-answer answer process)))))
 
