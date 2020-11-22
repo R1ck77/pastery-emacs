@@ -76,14 +76,26 @@
 (defun ersatz-paste-json-from-storage (id)
   (ersatz-paste-to-json id (cdr (assoc id ersatz-storage))))
 
+(defun ersatz-100-continue? (headers)
+  (string= "100-continue"
+           (downcase
+            (or (cdr (assoc :EXPECT headers)) ""))))
+
+(defun ersatz-continue-callback (something process string))
+
 (defun ersatz-handle-post (process path headers) 
-  (let ((body (caar (last headers)))
+  (let ((continue-requested (ersatz-100-continue? headers))
         (arguments-or-error (ersatz-create-paste-arguments headers)))
     (if (stringp arguments-or-error)
-        (cons HTTP-unprocessable-entity (ersatz-create-json-error arguments-or-error))
-      (let ((new-id (ersatz-paste-from-arguments (append (list :body body) arguments-or-error))))
-        ;; TODO/FIXME check if therere is an expect-continue!
-       (cons HTTP-ok (ersatz-paste-json-from-storage new-id))))))
+        (list HTTP-unprocessable-entity (ersatz-create-json-error arguments-or-error))
+      (if-let ((body (and (not (ersatz-100-continue? headers))
+                          (concat (caar (last headers)) "\n"))))
+        (progn
+          (new-id (ersatz-paste-from-arguments (append (list :body body) arguments-or-error)))
+          (list HTTP-ok (ersatz-paste-json-from-storage new-id)))
+        ;; TODO/FIXME not handled
+        ;; <-- add callback registration with currying here
+        :keep-alive))))
 
 ;;;;;;;
 ;;; GET
@@ -131,46 +143,49 @@
       (string= "paste" (elt components 2))
       (string= "" (car (last components)))
       (<= (length components) 5))
-     (cons HTTP-moved-permanently ""))))
+     (list HTTP-moved-permanently ""))))
 
 (defun ersatz-get-api-key-error (headers)
   (let ((key (assoc "api_key" headers)))
     (if (not key)
-        (cons HTTP-unprocessable-entity (ersatz-create-json-error "Missing keys: 'api_key'"))
+        (list HTTP-unprocessable-entity (ersatz-create-json-error "Missing keys: 'api_key'"))
         (unless (find (cdr key) ersatz-valid-keys :test 'equal )
-            (cons HTTP-unprocessable-entity (ersatz-create-json-error "\"api_key\" must be a valid API key."))))))
+          (list HTTP-unprocessable-entity (ersatz-create-json-error "\"api_key\" must be a valid API key."))))))
 
-(defun ersatz-handle-request (process headers)  
+(defun ersatz-create-response (headers)
   (or       
    (let ((get-path (alist-get ':GET headers)))
      (and get-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error get-path)
               (ersatz-validate-key-names headers '("api_key"))
-              (cons HTTP-ok (ersatz-handle-get get-path headers)))))
+              (list HTTP-ok (ersatz-handle-get get-path headers)))))
    (let ((delete-path (alist-get ':DELETE headers)))
      (and delete-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error delete-path)
               (ersatz-validate-key-names headers '("api_key"))
-              (cons HTTP-ok (ersatz-handle-delete delete-path)))))
+              (list HTTP-ok (ersatz-handle-delete delete-path)))))
    (let ((post-path (alist-get ':POST headers)))
      (and post-path
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error post-path)
               (ersatz-validate-key-names headers '("api_key" "title" "language" "duration" "max_views"))
-              (ersatz-handle-post process post-path headers))))
-   (cons HTTP-moved-permanently "")))
+              (ersatz-handle-post post-path headers))))
+   (list HTTP-moved-permanently "")))
+
+(defun ersatz-handle-request (headers send-response-f)
+  (apply send-response-f (ersatz-create-response headers)))
+
+(defun ersatz-send-response (process HTTP-code message)
+  (ws-response-header process HTTP-code
+                      (cons "Content Type" "application/json")
+                      (cons "Content-Length" (number-to-string (length message))))
+  (process-send-string process message))
 
 (defun ersatz-pastery-handler (request)
   (with-slots (process headers) request
-    (let* ((result (ersatz-handle-request process headers))
-           (HTTP-code (car result))
-           (message (cdr result)))
-      (ws-response-header process HTTP-code
-                          (cons "Content Type" "application/json")
-                          (cons "Content-Length" (number-to-string (length message))))
-      (process-send-string process message))))
+    (ersatz-handle-request headers (-partial #'ersatz-send-response process))))
 
 (defun stop-ersatz-server ()
   (interactive)

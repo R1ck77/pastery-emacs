@@ -4,6 +4,8 @@
 (require 'pastery-test-utils)
 (require 'cl)
 
+(defconst large-test-size 1000)
+
 (describe "pastery-api"
   (describe "pastery/get-paste-list"
     (it "returns a list of pastes if the api key is correct"
@@ -61,7 +63,7 @@
                                   (max_views . 0)
                                   (body . "body"))))
     (it "can return a rather long paste"
-      (let ((large-body (create-random-string 100000)))
+      (let ((large-body (create-random-string large-test-size)))
         (expect (with-debug-server
                  (ersatz-debug--set-pastes (cons "id" (new-paste :title "title" :language "c" :max_views 12 :duration 100 :body large-body)))
                  (let ((pastery-url "localhost:8080"))
