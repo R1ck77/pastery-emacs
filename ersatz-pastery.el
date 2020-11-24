@@ -8,8 +8,8 @@
 (require 'ersatz-continue-handling)
 (require 'pastery-consts)
 
-;;; TODO/FIXME duration and max_views not accounted at all
 ;;; TODO/FIXME wrong permissions! The pastes should be stored by key!!!
+;;; TODO/FIXME max-views not decremented!
 
 (defvar ersatz-valid-keys nil
   "Keys accepted by the current server")
@@ -30,6 +30,23 @@
                           (cons "Content Type" "application/json")
                           (cons "Content-Length" (number-to-string (length message))))
       (process-send-string process message))))
+
+(defun ersatz-remove-from-storage! (value-predicate &optional message-template)
+  "Remove from storage all paste matching the predicate.
+
+message-template, if provided, will write a message passing the paste id as an argument"
+  (--each (-filter value-predicate (-map #'cdr ersatz-storage))
+    (let ((paste-id (car it)))
+      (and message-template (message message-template paste-id))
+      (setq ersatz-storage (assoc-delete-all paste-id ersatz-storage)))))
+
+(defun ersatz-clean-storage! ()
+  "Remove all pastes that are overdue"
+  (ersatz-remove-from-storage! (lambda (paste)
+                                (<= (or (paste-max_views paste) 1) 0))
+                              "Deleting paste '%s' due to view limit exceeded")
+  (ersatz-remove-from-storage! #'ersatz-paste-overdue?
+                              "Deleting paste '%s' due to duration exceeded"))
 
 ;;;;;;;;
 ;;; POST
@@ -83,7 +100,7 @@
         partial-headers-or-error
       (ersatz-add-max-views-or-string headers partial-headers-or-error))))
 
-(defun ersatz-paste-from-arguments (arguments)
+(defun ersatz-paste-from-arguments! (arguments)
   (let* ((paste (apply #'new-paste arguments))
          (id (ersatz-create-paste-id))
          (alist-element (cons id paste)))
@@ -106,7 +123,7 @@
                            :message (ersatz-create-json-error arguments-or-error))
       (if-let ((body (and (not (ersatz-100-continue? headers))
                           (concat (caar (last headers)) "\n"))))
-          (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments (append (list :body body) arguments-or-error))))
+          (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! (append (list :body body) arguments-or-error))))
         (set-process-filter process
                             (-partial #'ersatz-continue-callback
                                       (string-to-number (cdr (assoc :CONTENT-LENGTH headers)))
@@ -131,16 +148,16 @@
 
 ;;;;;;;;;;
 ;;; DELETE
-(defun ersatz-delete-paste (id)
+(defun ersatz-delete-paste! (id)
   (let ((paste (cdr (assoc id ersatz-storage))))
     (if (not paste)
         "{\"result\": \"error\", \"error_msg\": \"That paste does not belong to you.\"}"
       (setq ersatz-storage (assoc-delete-all id ersatz-storage))
       "{\"result\": \"success\"}")))
 
-(defun ersatz-handle-delete (path)
+(defun ersatz-handle-delete! (path)
   ;;; TODO/FIXME handle the 301 case
-  (ersatz-delete-paste (ersatz-get-paste-id path)))
+  (ersatz-delete-paste! (ersatz-get-paste-id path)))
 
 (defun read-sample (name)
   (with-temp-buffer
@@ -183,7 +200,7 @@
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error delete-path)
               (ersatz-validate-key-names headers (list pastery-api-key))
-              (new-server-answer :message (ersatz-handle-delete delete-path)))))
+              (new-server-answer :message (ersatz-handle-delete! delete-path)))))
    (let ((post-path (alist-get ':POST headers)))
      (and post-path
           (or (ersatz-get-api-key-error headers)
@@ -200,6 +217,7 @@
   (funcall send-response-f (ersatz-create-response process headers)))
 
 (defun ersatz-pastery-handler (request)
+  (ersatz-clean-storage!)
   (with-slots (process headers) request
     (ersatz-handle-request process
                            headers

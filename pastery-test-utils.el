@@ -23,12 +23,14 @@
 
 ;; TODO/FIXME turn this into a matcher
 (defun compare-paste-lists (expected-list actual-list)
-  (--all? (not (not it))
-          (--map (let* ((id (cdr (assoc 'id it)))
-                        (expected-paste it)
-                        (actual-paste (car (--filter (string= (cdr (assoc 'id it)) id) actual-list))))
-                   (compare-paste expected-paste actual-paste))
-                 expected-list)))
+  (and
+   (= (length expected-list) (length actual-list))
+   (--all? (not (not it))
+           (--map (let* ((id (cdr (assoc 'id it)))
+                         (expected-paste it)
+                         (actual-paste (car (--filter (string= (cdr (assoc 'id it)) id) actual-list))))
+                    (compare-paste expected-paste actual-paste))
+                  expected-list))))
 
 (defun pastes-vector-as-list (pastes-list)
   (append (cdr (assoc 'pastes pastes-list)) '()))

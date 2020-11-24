@@ -5,17 +5,22 @@
   (created (float-time) :read-only t)
   (title "" :read-only t)
   (language "text" :read-only t)
-  (max_views 0 :read-only nil) ;;; TODO/FIXME decrease the count and silently delete if the case
+  (max_views nil :read-only nil)
   (body "" :read-only t))
 
-;;; TODO/FIXME function to clean the paste if outdated!
+(defun ersatz-paste-compute-float-duration (paste)
+  "Compute how many seconds remain before a paste is overdue"
+  (let ((now (float-time))
+        (initial-duration-s (* 60 (paste-initial-duration paste))))
+    (- initial-duration-s (- now (paste-created paste)))))
 
 (defun ersatz-paste-compute-duration (paste)
+  "Compute the value of 'paste validity' in minutes as the user should see it"
   (truncate
-   (/ (let ((now (float-time))
-            (initial-duration-s (* 60 (paste-initial-duration paste))))
-        (- initial-duration-s (- now (paste-created paste))))
-      60)))
+   (/ (ersatz-paste-compute-float-duration paste) 60)))
+
+(defun ersatz-paste-overdue? (paste)
+  (< (ersatz-paste-compute-float-duration paste) 1))
 
 (defun ersatz-paste-to-table (id paste)
   (let ((table (make-hash-table)))
@@ -27,7 +32,7 @@
     (puthash "duration"
              (ersatz-paste-compute-duration paste)
              table)
-    (puthash "max_views" (paste-max_views paste) table)
+    (puthash "max_views" (or (paste-max_views paste) 0) table)
     (puthash "body" (paste-body paste) table)
     table))
 
