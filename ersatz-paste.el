@@ -1,10 +1,11 @@
 ;;; Paste definition
 
 (cl-defstruct (paste (:constructor new-paste))
-  (duration 43200 :read-only t)
+  (duration 43200 :read-only t) ;;; TODO/FIXME update the duration. Time is shown as truncated minutes (so 1 becomes immediately 0)
+  (created (truncate (float-time)) :read-only t)
   (title "" :read-only t)
   (language "text" :read-only t)
-  (max_views 0 :read-only t)
+  (max_views 0 :read-only nil) ;;; TODO/FIXME decrease the count and silently delete if the case
   (body "" :read-only t))
 
 (defun ersatz-paste-to-table (id paste)
