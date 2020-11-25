@@ -9,7 +9,6 @@
 (require 'pastery-consts)
 
 ;;; TODO/FIXME wrong permissions! The pastes should be stored by key!!!
-;;; TODO/FIXME max-views is never actually shown!
 ;;; TODO/FIXME just for curiosity, try passing "ersatz-storage" everywhere instead of having it a global
 
 (defvar ersatz-valid-keys nil

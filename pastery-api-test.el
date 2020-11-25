@@ -19,14 +19,12 @@
                                               (title . "title1")
                                               (url . "http://localhost:8080/id1/")
                                               (language . "ttl")
-                                              (max_views . 12)
                                               (duration . 43199)
                                               (body . "body1"))
                                              ((id . "id2")
                                               (title . "title2")
                                               (url . "http://localhost:8080/id2/")
                                               (language . "c")
-                                              (max_views . 0)
                                               (body . "body2")
                                               (duration . 99))]))
                                 result)
@@ -60,7 +58,6 @@
                                   (url . "http://localhost:8080/id2/")
                                   (language . "c")
                                   (duration . 99)
-                                  (max_views . 0)
                                   (body . "body"))))
     (it "can return a rather long paste"
       (let ((large-body (create-random-string large-test-size)))
@@ -73,7 +70,6 @@
                                     (url . "http://localhost:8080/id/")
                                     (language . "c")
                                     (duration . 99)
-                                    (max_views . 12)
                                     (body . ,large-body))))))
   (describe "pastery/delete-paste"
     (it "returns an error if the API key is wrong"

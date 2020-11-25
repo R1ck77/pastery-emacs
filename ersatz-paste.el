@@ -44,7 +44,6 @@ It strives to keep paste a value, despite not being ELISP truly a functional lan
     (puthash "duration"
              (ersatz-paste-compute-duration paste)
              table)
-    (puthash "max_views" (or (paste-max_views paste) 0) table)
     (puthash "body" (paste-body paste) table)
     table))
 
