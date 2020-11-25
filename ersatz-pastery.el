@@ -9,7 +9,8 @@
 (require 'pastery-consts)
 
 ;;; TODO/FIXME wrong permissions! The pastes should be stored by key!!!
-;;; TODO/FIXME max-views not decremented!
+;;; TODO/FIXME max-views is never actually shown!
+;;; TODO/FIXME just for curiosity, try passing "ersatz-storage" everywhere instead of having it a global
 
 (defvar ersatz-valid-keys nil
   "Keys accepted by the current server")
@@ -35,7 +36,7 @@
   "Remove from storage all paste matching the predicate.
 
 message-template, if provided, will write a message passing the paste id as an argument"
-  (--each (-filter value-predicate (-map #'cdr ersatz-storage))
+  (--each (--filter (funcall value-predicate (cdr it)) ersatz-storage)
     (let ((paste-id (car it)))
       (and message-template (message message-template paste-id))
       (setq ersatz-storage (assoc-delete-all paste-id ersatz-storage)))))
@@ -56,13 +57,18 @@ message-template, if provided, will write a message passing the paste id as an a
     (substring (reverse timestamp-as-string)
                0 6)))
 
+;;; TODO/FIXME too complex
 (defun ersatz-add-max-views-or-string (headers arguments)
   "Return the max-views specified by the user as an integer, or a string if the value is not a valid non-negative integer"
   (if-let ((max-views (cdr (assoc pastery-max-views-key headers))))
       (let ((converted (ersatz-to-integer max-views)))
         (if (not converted)
             "\"max_views\" should be a non-negative integer number of views before the paste is deleted."
-          (append (list :max_views converted) arguments)))))
+          (append
+           (list :max_views (if (zerop converted)
+                                nil
+                              converted))
+           arguments)))))
 
 (defun ersatz-add-duration-or-string (headers arguments)
   "Return the duration specified by the user as an integer, or a string if the value is not a valid non-negative integer"
@@ -132,17 +138,28 @@ message-template, if provided, will write a message passing the paste id as an a
 
 ;;;;;;;
 ;;; GET
-(defun ersatz-handle-get-paste (id)
-  (ersatz-pastes-to-json (list id)))
+(defun ersatz-handle-get-paste! (id)
+  "Answer with the paste, if it exists.
+
+Decrement the max-views count"
+  (let ((result (ersatz-pastes-to-json (list id))))
+    (if-let ((paste (cdr (assoc id ersatz-storage))))
+        (when (paste-max_views paste)
+          (setq ersatz-storage (assoc-delete-all id ersatz-storage))
+          (push (cons id (ersatz-paste-with-decremented-view paste)) ersatz-storage)))
+    result))
 
 (defun ersatz-handle-get-list ()
+  "Answer with a list of the pastes.
+
+There is a bug/curious feature in the original server where listing the pastes will decrement the 'views' counter, this implementation will not do it."
   (ersatz-storage-to-json))
 
-(defun ersatz-handle-get (path headers)
+(defun ersatz-handle-get! (path headers)
   (if-let (id (ersatz-get-paste-id path))
       (if (string-empty-p id)
           (ersatz-handle-get-list)
-        (ersatz-handle-get-paste id))
+        (ersatz-handle-get-paste! id))
       ;;; TODO/FIXME handle this 301 no content
     (error "INVALID SOMETHING. Handle this")))
 
@@ -194,7 +211,7 @@ message-template, if provided, will write a message passing the paste id as an a
           (or (ersatz-get-api-key-error headers)
               (ersatz-get-path-error get-path)
               (ersatz-validate-key-names headers (list pastery-api-key))
-              (new-server-answer :message (ersatz-handle-get get-path headers)))))
+              (new-server-answer :message (ersatz-handle-get! get-path headers)))))
    (let ((delete-path (alist-get ':DELETE headers)))
      (and delete-path
           (or (ersatz-get-api-key-error headers)
