@@ -56,18 +56,30 @@ message-template, if provided, will write a message passing the paste id as an a
     (substring (reverse timestamp-as-string)
                0 6)))
 
-;;; TODO/FIXME too complex
-(defun ersatz-add-max-views-or-string (headers arguments)
-  "Return the max-views specified by the user as an integer, or a string if the value is not a valid non-negative integer"
+(cl-defstruct (ersatz-operation-result (:constructor new-ersatz-operation-result))
+  (value nil :read-only t)
+  (error-message nil :read-only t))
+
+(defun ersatz-extract-max-views (headers)
+  "Returns the result of parsing max views from the headers"
   (if-let ((max-views (cdr (assoc pastery-max-views-key headers))))
       (let ((converted (ersatz-to-integer max-views)))
-        (if (not converted)
-            "\"max_views\" should be a non-negative integer number of views before the paste is deleted."
-          (append
-           (list :max_views (if (zerop converted)
-                                nil
-                              converted))
-           arguments)))))
+        (if converted
+            (new-ersatz-operation-result :value (unless (zerop converted)
+                                                    converted))
+          (new-ersatz-operation-result :error-message "\"max_views\" should be a non-negative integer number of views before the paste is deleted.")))
+    (new-ersatz-operation-result :value nil)))
+
+;;; TODO/FIXME too complex
+(defun ersatz-add-max-views (headers arguments)
+  "Return an ersatz-operation-result with as value the arguments updated with the max_views value.
+
+An error operation-result is return if the max_value parsing fails"
+  (let ((result (ersatz-extract-max-views headers)))
+    (if (ersatz-operation-result-error-message result)
+        result
+      (let ((max-views-argument (list :max_views (ersatz-operation-result-value result))))
+        (new-ersatz-operation-result :value (append max-views-argument arguments))))))
 
 (defun ersatz-add-duration-or-string (headers arguments)
   "Return the duration specified by the user as an integer, or a string if the value is not a valid non-negative integer"
@@ -95,7 +107,7 @@ message-template, if provided, will write a message passing the paste id as an a
     arguments))
 
 (defun ersatz-create-paste-arguments (headers)
-  "Extract the arguments from the headers, returns an alist of header values or a string with an error"
+  "Extract the arguments from the headers, returns an ersatz-operation-result with the list of arguments"
   (let ((partial-headers-or-error (ersatz-add-duration-or-string
                                    headers
                                    (ersatz-add-language
@@ -103,7 +115,7 @@ message-template, if provided, will write a message passing the paste id as an a
                                     (ersatz-add-title headers nil)))))
     (if (stringp partial-headers-or-error)
         partial-headers-or-error
-      (ersatz-add-max-views-or-string headers partial-headers-or-error))))
+      (ersatz-add-max-views headers partial-headers-or-error))))
 
 (defun ersatz-paste-from-arguments! (arguments)
   (let* ((paste (apply #'new-paste arguments))
@@ -120,20 +132,40 @@ message-template, if provided, will write a message passing the paste id as an a
            (downcase
             (or (cdr (assoc :EXPECT headers)) ""))))
 
-(defun ersatz-handle-post (process path headers) 
-  (let ((continue-requested (ersatz-100-continue? headers))
-        (arguments-or-error (ersatz-create-paste-arguments headers)))  ;;; TODO/FIXME hideous™ reuse of symbol
-    (if (stringp arguments-or-error)
-        (new-server-answer :HTTP-code HTTP-unprocessable-entity
-                           :message (ersatz-create-json-error arguments-or-error))
-      (if-let ((body (and (not (ersatz-100-continue? headers))
-                          (concat (caar (last headers)) "\n"))))
-          (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! (append (list :body body) arguments-or-error))))
+(defun ersatz-handle-post-small-body ())
+
+;;; TODO/FIXME why do I need to add a \n at the end?
+(defun ersatz-extract-post-body (headers)
+  "Return the content of the POST message body"
+  (let ((post-body (caar (last headers))))
+    (concat  post-body "\n")))
+
+(defun ersatz-get-arguments-with-paste-body (headers arguments)
+  (let ((body (ersatz-extract-post-body headers)))
+    (append (list :body body) arguments)))
+
+(defun ersatz-get-content-length (headers)
+  (string-to-number (cdr (assoc :CONTENT-LENGTH headers))))
+
+(defun ersatz-handle-post-valid-arguments (headers arguments)
+  (if (ersatz-100-continue? headers)
+      (prog1 (new-server-answer :keep-alive t)
         (set-process-filter process
                             (-partial #'ersatz-continue-callback
-                                      (string-to-number (cdr (assoc :CONTENT-LENGTH headers)))
-                                      arguments-or-error))
-        (new-server-answer :keep-alive t)))))
+                                      (ersatz-get-content-length headers)
+                                      arguments)))
+    (let ((arguments-with-body (ersatz-get-arguments-with-paste-body headers arguments)))
+      (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! arguments-with-body))))))
+
+(defun ersatz-handle-post-argument-parsing-error (error-message)
+  (new-server-answer :HTTP-code HTTP-unprocessable-entity
+                     :message (ersatz-create-json-error error-message)))
+
+(defun ersatz-handle-post (process headers)
+  (if-let ((argument-parsing-result (ersatz-create-paste-arguments headers))
+           (error-message (ersatz-operation-result-error-message argument-parsing-result)))
+      (ersatz-handle-post-argument-parsing-error error-message)
+    (ersatz-handle-post-valid-arguments headers (ersatz-operation-result-value argument-parsing-result))))
 
 ;;;;;;;
 ;;; GET
@@ -226,7 +258,7 @@ There is a bug/curious feature in the original server where listing the pastes w
                                                        pastery-language-key
                                                        pastery-duration-key
                                                        pastery-max-views-key))
-              (ersatz-handle-post process post-path headers))))
+              (ersatz-handle-post process headers))))
    (new-server-answer :HTTP-code HTTP-moved-permanently)))
 
 (defun ersatz-handle-request (process headers send-response-f)

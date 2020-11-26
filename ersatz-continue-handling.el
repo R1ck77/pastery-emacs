@@ -18,7 +18,7 @@
     (puthash process current-data ersatz-connection-buffers)
     (when (>= (ersatz-received-size process) expected-size)
       (let* ((content (apply #'concat (reverse current-data)))
-             (new-id (ersatz-paste-from-arguments (append (list :body content) answer-arguments))))
+             (new-id (ersatz-paste-from-arguments! (append (list :body content) answer-arguments))))
         (ersatz-send-answer (new-server-answer :message (ersatz-paste-json-from-storage new-id)) process)))))
 
 (provide 'ersatz-continue-handling)
