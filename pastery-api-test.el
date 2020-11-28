@@ -117,4 +117,44 @@
          (expect (alist-get 'title pastery-result) :to-equal "title")
          (expect (alist-get 'url pastery-result) :to-equal (format "http://localhost:8080/%s/" id))
          (expect (alist-get 'language pastery-result) :to-equal "c")
-         (expect (alist-get 'duration pastery-result) :to-be 43))))))
+         (expect (alist-get 'duration pastery-result) :to-be 43)))))
+  (describe "pastery-api usage scenarios"
+    (it "can create, get and destroy a paste"
+      (with-debug-server
+       (let ((paste-id)
+             (expected-title "paste title")
+             (expected-body "body")
+             (expected-language "java")
+             (expected-duration 44)
+             (pastery-url "localhost:8080"))
+         ;; Create a paste
+         (let ((put-result (pastery/put-paste "key1" expected-title expected-body expected-language (1+ expected-duration))))
+           (setq paste-id (alist-get 'id put-result))
+           (expect paste-id :not :to-be nil)
+           (expect (alist-get 'title put-result) :to-equal expected-title)
+           (expect (alist-get 'url put-result) :to-equal (format "http://localhost:8080/%s/" paste-id))
+           (expect (alist-get 'language put-result) :to-equal expected-language)
+           (expect (alist-get 'duration put-result) :to-be expected-duration))
+         ;; Get the paste list
+         (let ((get-paste-list-result (pastery/get-paste-list "key1")))
+           (expect (length (alist-get 'pastes get-paste-list-result)) :to-be 1)
+           (let ((list-element (elt (alist-get 'pastes get-paste-list-result) 0)))
+             (expect (alist-get 'id list-element) :to-equal paste-id)
+             (expect (alist-get 'title list-element) :to-equal expected-title)
+             (expect (alist-get 'url list-element) :to-equal (format "http://localhost:8080/%s/" paste-id))
+             (expect (alist-get 'language list-element) :to-equal expected-language)
+             (expect (alist-get 'duration list-element) :to-be expected-duration)))
+         ;; Get the paste itself
+         (let ((get-paste-result (pastery/get-paste "key1" paste-id)))
+           (expect (alist-get 'id get-paste-result) :to-equal paste-id)
+           (expect (alist-get 'title get-paste-result) :to-equal expected-title)
+           (expect (alist-get 'url get-paste-result) :to-equal (format "http://localhost:8080/%s/" paste-id))
+           (expect (alist-get 'language get-paste-result) :to-equal expected-language)
+           (expect (alist-get 'duration get-paste-result) :to-be expected-duration)
+           (expect (alist-get 'body get-paste-result) :to-equal expected-body))
+         ;; The paste creator deletes the paste
+         (let ((delete-paste-result (pastery/delete-paste "key1" paste-id)))
+           (expect (alist-get 'result delete-paste-result) :to-equal "success"))
+         ;; Now the list of pastes is empty
+         (let ((get-paste-list-result (pastery/get-paste-list "key1")))
+           (expect (length (alist-get 'pastes get-paste-list-result)) :to-be 0)))))))
