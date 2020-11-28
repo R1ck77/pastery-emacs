@@ -87,7 +87,8 @@ An error operation-result is return if the max_value parsing fails"
       (let ((converted (ersatz-to-integer duration)))
         (if (not converted)
             "\"duration\" should be a positive integer number of minutes before the paste is deleted."
-          (append (list :initial-duration converted) arguments)))))
+          (append (list :initial-duration converted) arguments)))
+    arguments))
 
 (defun ersatz-validate-language (user-specified-language)
   "Return the language specified by the user if valid, or \"text\""
