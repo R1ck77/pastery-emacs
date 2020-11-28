@@ -97,4 +97,24 @@
                (let ((pastery-url "localhost:8080"))
                  (pastery/put-paste "wrong-api-key" "title" "content")))
               :to-be-same-alist '((result . "error")
-                                  (error_msg . "\"api_key\" must be a valid API key."))))))
+                                  (error_msg . "\"api_key\" must be a valid API key."))))
+    (it "returns the paste coarse details on success"
+      (with-debug-server
+       (let* ((pastery-url "localhost:8080")
+              (pastery-result (pastery/put-paste "key1" "title" "content"))
+              (id (alist-get 'id pastery-result)))
+         (expect id :not :to-be nil)
+         (expect (alist-get 'title pastery-result) :to-equal "title")
+         (expect (alist-get 'url pastery-result) :to-equal (format "http://localhost:8080/%s/" id))
+         (expect (alist-get 'language pastery-result) :to-equal "text")
+         (expect (alist-get 'duration pastery-result) :to-be 43199))))
+    (it "returns the paste coarse details on success, including optional values"
+      (with-debug-server
+       (let* ((pastery-url "localhost:8080")
+              (pastery-result (pastery/put-paste "key1" "title" "content" "c" 44 13))
+              (id (alist-get 'id pastery-result)))
+         (expect id :not :to-be nil)
+         (expect (alist-get 'title pastery-result) :to-equal "title")
+         (expect (alist-get 'url pastery-result) :to-equal (format "http://localhost:8080/%s/" id))
+         (expect (alist-get 'language pastery-result) :to-equal "c")
+         (expect (alist-get 'duration pastery-result) :to-be 43))))))
