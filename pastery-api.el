@@ -46,6 +46,7 @@
               :type "POST"
               :params (pastery/add--optional-params fixed-params language duration max_views)
               :parser #'json-read
+              :data content
               :sync t))))
 
 (provide 'pastery-api)
