@@ -135,11 +135,10 @@ An error operation-result is return if the max_value parsing fails"
 
 (defun ersatz-handle-post-small-body ())
 
-;;; TODO/FIXME why do I need to add a \n at the end?
+;;; TODO/FIXME should I need to add a \n at the end?
 (defun ersatz-extract-post-body (headers)
   "Return the content of the POST message body"
-  (let ((post-body (caar (last headers))))
-    (concat  post-body "\n")))
+  (caar (last headers)))
 
 (defun ersatz-get-arguments-with-paste-body (headers arguments)
   (let ((body (ersatz-extract-post-body headers)))
