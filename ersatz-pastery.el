@@ -236,40 +236,40 @@ There is a bug/curious feature in the original server where listing the pastes w
          (<= (length components) 5))
       (new-server-answer :HTTP-code HTTP-moved-permanently))))
 
-(defun ersatz-get-api-key-error (headers)
-  (let ((key (assoc pastery-api-key headers)))
-    (if (not key)
-        (new-server-answer :HTTP-code HTTP-unprocessable-entity
-                           :message (ersatz-create-json-error "Missing keys: 'api_key'"))
-      (unless (find (cdr key) ersatz-valid-keys :test 'equal )
-        (new-server-answer :HTTP-code HTTP-unprocessable-entity
-                           :message (ersatz-create-json-error (format "%S must be a valid API key." pastery-api-key)))))))
+(defun ersatz-get-api-key-error (key)
+  (if (not key)
+      (new-server-answer :HTTP-code HTTP-unprocessable-entity
+                         :message (ersatz-create-json-error "Missing keys: 'api_key'"))
+    (unless (find (cdr key) ersatz-valid-keys :test 'equal )
+      (new-server-answer :HTTP-code HTTP-unprocessable-entity
+                         :message (ersatz-create-json-error (format "%S must be a valid API key." pastery-api-key))))))
 
 (defun ersatz-create-response (process headers)
-  (or       
-   (let ((get-path (alist-get ':GET headers)))
-     (and get-path
-          (or (ersatz-get-api-key-error headers)
-              (ersatz-get-path-error get-path)
-              (ersatz-validate-key-names headers (list pastery-api-key))
-              (new-server-answer :message (ersatz-handle-get! get-path headers)))))
-   (let ((delete-path (alist-get ':DELETE headers)))
-     (and delete-path
-          (or (ersatz-get-api-key-error headers)
-              (ersatz-get-path-error delete-path)
-              (ersatz-validate-key-names headers (list pastery-api-key))
-              (new-server-answer :message (ersatz-handle-delete! delete-path)))))
-   (let ((post-path (alist-get ':POST headers)))
-     (and post-path
-          (or (ersatz-get-api-key-error headers)
-              (ersatz-get-path-error post-path)
-              (ersatz-validate-key-names headers (list pastery-api-key
-                                                       pastery-title-key
-                                                       pastery-language-key
-                                                       pastery-duration-key
-                                                       pastery-max-views-key))
-              (ersatz-handle-post process headers))))
-   (new-server-answer :HTTP-code HTTP-moved-permanently)))
+  (let ((api-key-cons (assoc pastery-api-key headers)))
+   (or       
+    (let ((get-path (alist-get ':GET headers)))
+      (and get-path
+           (or (ersatz-get-api-key-error api-key-cons) ;;; TODO/FIXME why is this repeated?
+               (ersatz-get-path-error get-path)  ;;; Why is the function repeated???
+               (ersatz-validate-key-names headers (list pastery-api-key))
+               (new-server-answer :message (ersatz-handle-get! get-path headers)))))
+    (let ((delete-path (alist-get ':DELETE headers)))
+      (and delete-path
+           (or (ersatz-get-api-key-error api-key-cons)
+               (ersatz-get-path-error delete-path)
+               (ersatz-validate-key-names headers (list pastery-api-key))
+               (new-server-answer :message (ersatz-handle-delete! delete-path)))))
+    (let ((post-path (alist-get ':POST headers)))
+      (and post-path
+           (or (ersatz-get-api-key-error api-key-cons)
+               (ersatz-get-path-error post-path)
+               (ersatz-validate-key-names headers (list pastery-api-key
+                                                        pastery-title-key
+                                                        pastery-language-key
+                                                        pastery-duration-key
+                                                        pastery-max-views-key))
+               (ersatz-handle-post process headers))))
+    (new-server-answer :HTTP-code HTTP-moved-permanently))))
 
 (defun ersatz-handle-request (process headers send-response-f)
   (funcall send-response-f (ersatz-create-response process headers)))
