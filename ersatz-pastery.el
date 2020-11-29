@@ -246,23 +246,21 @@ There is a bug/curious feature in the original server where listing the pastes w
 
 (defun ersatz-create-response (process headers)
   (let ((api-key-cons (assoc pastery-api-key headers)))
-   (or       
+    (or
+     (ersatz-get-api-key-error api-key-cons)
     (let ((get-path (alist-get ':GET headers)))
       (and get-path
-           (or (ersatz-get-api-key-error api-key-cons) ;;; TODO/FIXME why is this repeated?
-               (ersatz-get-path-error get-path)  ;;; Why is the function repeated???
+           (or (ersatz-get-path-error get-path)  ;;; TODO/FIXME is there a way to remove the functions repetition?
                (ersatz-validate-key-names headers (list pastery-api-key))
                (new-server-answer :message (ersatz-handle-get! get-path headers)))))
     (let ((delete-path (alist-get ':DELETE headers)))
       (and delete-path
-           (or (ersatz-get-api-key-error api-key-cons)
-               (ersatz-get-path-error delete-path)
+           (or (ersatz-get-path-error delete-path)
                (ersatz-validate-key-names headers (list pastery-api-key))
                (new-server-answer :message (ersatz-handle-delete! delete-path)))))
     (let ((post-path (alist-get ':POST headers)))
       (and post-path
-           (or (ersatz-get-api-key-error api-key-cons)
-               (ersatz-get-path-error post-path)
+           (or (ersatz-get-path-error post-path)
                (ersatz-validate-key-names headers (list pastery-api-key
                                                         pastery-title-key
                                                         pastery-language-key
