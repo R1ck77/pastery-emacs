@@ -144,7 +144,6 @@ Since the presence of the api_key was already checked, I will throw an error if 
 
 (defun ersatz-handle-post-small-body ())
 
-;;; TODO/FIXME should I need to add a \n at the end?
 (defun ersatz-extract-post-body (headers)
   "Return the content of the POST message body"
   (caar (last headers)))
