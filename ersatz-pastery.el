@@ -90,6 +90,14 @@ An error operation-result is return if the max_value parsing fails"
           (append (list :initial-duration converted) arguments)))
     arguments))
 
+(defun ersatz-add-owner (headers arguments)
+  "Adds the key to the arguments as 'owner'
+
+Since the presence of the api_key was already checked, I will throw an error if not present"
+  (if-let ((api_key (cdr (assoc pastery-api-key headers))))
+      (append (list :owner api_key) arguments)
+    (error "expected api_key not found!")))
+
 (defun ersatz-validate-language (user-specified-language)
   "Return the language specified by the user if valid, or \"text\""
   (or (find user-specified-language valid-languages :test 'equal)
@@ -109,11 +117,13 @@ An error operation-result is return if the max_value parsing fails"
 
 (defun ersatz-create-paste-arguments (headers)
   "Extract the arguments from the headers, returns an ersatz-operation-result with the list of arguments"
-  (let ((partial-headers-or-error (ersatz-add-duration-or-string
+  (let ((partial-headers-or-error (ersatz-add-owner
                                    headers
-                                   (ersatz-add-language
+                                   (ersatz-add-duration-or-string
                                     headers
-                                    (ersatz-add-title headers nil)))))
+                                    (ersatz-add-language
+                                     headers
+                                     (ersatz-add-title headers nil))))))
     (if (stringp partial-headers-or-error)
         partial-headers-or-error
       (ersatz-add-max-views headers partial-headers-or-error))))

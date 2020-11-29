@@ -6,7 +6,8 @@
   (title "" :read-only t)
   (language "text" :read-only t)
   (max_views nil :read-only t)
-  (body "" :read-only t))
+  (body "" :read-only t)
+  (owner nil :read-only t))
 
 (defun ersatz-paste-with-decremented-view (paste)
   "Stridently functional approach to decrementing the paste
@@ -18,7 +19,8 @@ It strives to keep paste a value, despite not being ELISP truly a functional lan
                :title (paste-title paste)
                :language (paste-language paste)
                :max_views (and old-max-views (1- old-max-views))
-               :body (paste-body paste))))
+               :body (paste-body paste)
+               :owner (paste-owner paste))))
 
 (defun ersatz-paste-compute-float-duration (paste)
   "Compute how many seconds remain before a paste is overdue"
