@@ -1,5 +1,6 @@
 ;;; Paste definition
 
+;; TODO/FIXME this paste contains both paste related stuff, and handling related stuff. Use two structures
 (cl-defstruct (paste (:constructor new-paste))
   (initial-duration 43200 :read-only t)
   (created (float-time) :read-only t)
