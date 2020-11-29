@@ -8,7 +8,6 @@
 (require 'ersatz-continue-handling)
 (require 'pastery-consts)
 
-;;; TODO/FIXME wrong permissions! The pastes should be stored by key!!!
 ;;; TODO/FIXME just for curiosity, try passing "ersatz-storage" everywhere instead of having it a global
 
 (defvar ersatz-valid-keys nil
@@ -190,32 +189,32 @@ Decrement the max-views count"
           (push (cons id (ersatz-paste-with-decremented-view paste)) ersatz-storage)))
     result))
 
-(defun ersatz-handle-get-list ()
+(defun ersatz-handle-get-list (owner)
   "Answer with a list of the pastes.
 
 There is a bug/curious feature in the original server where listing the pastes will decrement the 'views' counter, this implementation will not do it."
-  (ersatz-storage-to-json))
+  (ersatz-storage-to-json owner))
 
-(defun ersatz-handle-get! (path headers)
+(defun ersatz-handle-get! (path headers owner)
   (if-let (id (ersatz-get-paste-id path))
       (if (string-empty-p id)
-          (ersatz-handle-get-list)
+          (ersatz-handle-get-list owner)
         (ersatz-handle-get-paste! id))
       ;;; TODO/FIXME handle this 301 no content
     (error "INVALID SOMETHING. Handle this")))
 
 ;;;;;;;;;;
 ;;; DELETE
-(defun ersatz-delete-paste! (id)
+(defun ersatz-delete-paste! (id owner)
   (let ((paste (cdr (assoc id ersatz-storage))))
-    (if (not paste)
+    (if (or (not paste) (not (equal (paste-owner paste) owner)))
         "{\"result\": \"error\", \"error_msg\": \"That paste does not belong to you.\"}"
       (setq ersatz-storage (assoc-delete-all id ersatz-storage))
       "{\"result\": \"success\"}")))
 
-(defun ersatz-handle-delete! (path)
+(defun ersatz-handle-delete! (path owner)
   ;;; TODO/FIXME handle the 301 case
-  (ersatz-delete-paste! (ersatz-get-paste-id path)))
+  (ersatz-delete-paste! (ersatz-get-paste-id path) owner))
 
 (defun read-sample (name)
   (with-temp-buffer
@@ -252,12 +251,12 @@ There is a bug/curious feature in the original server where listing the pastes w
       (and get-path
            (or (ersatz-get-path-error get-path)  ;;; TODO/FIXME is there a way to remove the functions repetition?
                (ersatz-validate-key-names headers (list pastery-api-key))
-               (new-server-answer :message (ersatz-handle-get! get-path headers)))))
+               (new-server-answer :message (ersatz-handle-get! get-path headers (cdr api-key-cons))))))
     (let ((delete-path (alist-get ':DELETE headers)))
       (and delete-path
            (or (ersatz-get-path-error delete-path)
                (ersatz-validate-key-names headers (list pastery-api-key))
-               (new-server-answer :message (ersatz-handle-delete! delete-path)))))
+               (new-server-answer :message (ersatz-handle-delete! delete-path (cdr api-key-cons))))))
     (let ((post-path (alist-get ':POST headers)))
       (and post-path
            (or (ersatz-get-path-error post-path)

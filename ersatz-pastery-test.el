@@ -65,9 +65,9 @@
        ;; Get the paste itself, as owner of the paste
        (setq paste-json-as-owner (pastery/get-paste "key1" paste-id))
        ;; Delete the paste as other user
-       (let ((delete-paste-result (pastery/delete-paste "key1" paste-id)))
+       (let ((delete-paste-result (pastery/delete-paste "key2" paste-id)))
          (expect (alist-get 'result delete-paste-result) :to-equal "error")
-         (expect (alist-get 'error_msg delete-paste-result) :to-equal "The paste does not belong to you."))
+         (expect (alist-get 'error_msg delete-paste-result) :to-equal "That paste does not belong to you."))
        ;; The paste is still there, though
        (let ((paste-json-as-other (pastery/get-paste "key2" paste-id)))
          (expect paste-json-as-other :to-equal paste-json-as-owner))))))

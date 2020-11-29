@@ -3,9 +3,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Generic utility functions
 
-(defun ersatz-storage-to-json ()
-  "Returns a JSON representation of the whole storage"
-  (ersatz-pastes-to-json (--map (car it) ersatz-storage)))
+(defun ersatz-storage-to-json (owner)
+  "Returns a JSON representation of the whole storage for the selected user"
+  (ersatz-pastes-to-json (--map (car it) (--filter (equal owner (paste-owner (cdr it))) ersatz-storage))))
 
 (defun ersatz-path-surrounded-with-/? (path)
   (let ((characters (string-to-list path)))
