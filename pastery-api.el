@@ -31,11 +31,10 @@
             :parser #'json-read
             :sync t)))
 
-;;; TODO/FIXME macro. Also how many , can I put in a ` expression and still think about it as "simplified"?? :p
 (defun pastery/add--optional-params (params &optional language duration max_views)
-  (if language (setq params `((,pastery-language-key . ,language) . ,params)))
-  (if duration (setq params `((,pastery-duration-key . ,duration) . ,params)))
-  (if max_views (setq params `((,pastery-max-views-key . ,max_views) . ,params)))
+  (if language (push (cons pastery-language-key language) params))
+  (if duration (push (cons pastery-duration-key duration) params))
+  (if max_views (push (cons pastery-max-views-key max_views) params))
   params)
 
 (defun pastery/put-paste (api-key title content &optional language duration max_views)
