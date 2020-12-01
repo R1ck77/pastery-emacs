@@ -69,7 +69,6 @@ message-template, if provided, will write a message passing the paste id as an a
           (new-ersatz-operation-result :error-message "\"max_views\" should be a non-negative integer number of views before the paste is deleted.")))
     (new-ersatz-operation-result :value nil)))
 
-;;; TODO/FIXME too complex
 (defun ersatz-add-max-views (headers arguments)
   "Return an ersatz-operation-result with as value the arguments updated with the max_views value.
 
