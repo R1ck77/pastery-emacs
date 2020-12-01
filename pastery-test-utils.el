@@ -21,8 +21,7 @@
 
 (buttercup-define-matcher-for-binary-function :to-be-paste-like paste-list-matcher)
 
-;; TODO/FIXME turn this into a matcher
-(defun compare-paste-lists (expected-list actual-list)
+(defun pastes-lists-matcher (expected-list actual-list)
   (and
    (= (length expected-list) (length actual-list))
    (--all? (not (not it))
@@ -31,6 +30,8 @@
                          (actual-paste (car (--filter (string= (cdr (assoc 'id it)) id) actual-list))))
                     (compare-paste expected-paste actual-paste))
                   expected-list))))
+
+(buttercup-define-matcher-for-binary-function :to-be-a-list-of-pastes-like pastes-lists-matcher)
 
 (defun pastes-vector-as-list (pastes-list)
   (append (cdr (assoc 'pastes pastes-list)) '()))

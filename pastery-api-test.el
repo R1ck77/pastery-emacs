@@ -9,27 +9,25 @@
 (describe "pastery-api"
   (describe "pastery/get-paste-list"
     (it "returns a list of pastes if the api key is correct"
-      (let ((result (with-debug-server
-                     (ersatz-debug--set-pastes (cons "id1" (new-paste :title "title1" :language "ttl" :max_views 12 :body "body1" :owner "key1"))
-                                               (cons "idx" (new-paste :title "titlex" :language "c" :initial-duration 100 :body "body2" :owner "key2"))
-                                               (cons "id2" (new-paste :title "title2" :language "c" :initial-duration 100 :body "body2" :owner "key1")))
-                     (let ((pastery-url "localhost:8080"))
-                       (pastery/get-paste-list "key1")))))        
-        (expect
-         (compare-paste-results '((pastes . [((id . "id1")
-                                              (title . "title1")
-                                              (url . "http://localhost:8080/id1/")
-                                              (language . "ttl")
-                                              (duration . 43199)
-                                              (body . "body1"))
-                                             ((id . "id2")
-                                              (title . "title2")
-                                              (url . "http://localhost:8080/id2/")
-                                              (language . "c")
-                                              (body . "body2")
-                                              (duration . 99))]))
-                                result)
-         :to-be t)))
+      (expect (cdr (assoc 'pastes (with-debug-server
+                               (ersatz-debug--set-pastes (cons "id1" (new-paste :title "title1" :language "ttl" :max_views 12 :body "body1" :owner "key1"))
+                                                         (cons "idx" (new-paste :title "titlex" :language "c" :initial-duration 100 :body "body2" :owner "key2"))
+                                                         (cons "id2" (new-paste :title "title2" :language "c" :initial-duration 100 :body "body2" :owner "key1")))
+                               (let ((pastery-url "localhost:8080"))
+                                 (pastery/get-paste-list "key1")))))
+              :to-be-a-list-of-pastes-like
+              '(((id . "id1")
+                 (title . "title1")
+                 (url . "http://localhost:8080/id1/")
+                 (language . "ttl")
+                 (duration . 43199)
+                 (body . "body1"))
+                ((id . "id2")
+                 (title . "title2")
+                 (url . "http://localhost:8080/id2/")
+                 (language . "c")
+                 (body . "body2")
+                 (duration . 99)))))
     (it "returns an error if the wrong api key is provided"
       (expect (with-debug-server
                (let ((pastery-url "localhost:8080"))
