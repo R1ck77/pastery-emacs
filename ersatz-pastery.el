@@ -155,14 +155,19 @@ Since the presence of the api_key was already checked, I will throw an error if 
   (string-to-number (cdr (assoc :CONTENT-LENGTH headers))))
 
 (defun ersatz-handle-post-valid-arguments (headers arguments)
-  (if (ersatz-100-continue? headers)
-      (prog1 (new-server-answer :keep-alive t)
-        (set-process-filter process
-                            (-partial #'ersatz-continue-callback
-                                      (ersatz-get-content-length headers)
-                                      arguments)))
-    (let ((arguments-with-body (ersatz-get-arguments-with-paste-body headers arguments)))
-      (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! arguments-with-body))))))
+  (lexical-let ((arguments arguments))
+    (if (ersatz-100-continue? headers)
+        (prog1 (new-server-answer :keep-alive t)
+          (set-process-filter process
+                              (-partial #'ersatz-continue-callback
+                                        (ersatz-get-content-length headers)
+                                        ;; TODO/FIXME extract!
+                                        (lambda (current-process content)
+                                          (let ((paste-id (ersatz-paste-from-arguments! (append (list :body content) arguments))))
+                                            (ersatz-send-answer (new-server-answer :message (ersatz-paste-json-from-storage paste-id))
+                                                                current-process))))))
+      (let ((arguments-with-body (ersatz-get-arguments-with-paste-body headers arguments)))
+        (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! arguments-with-body)))))))
 
 (defun ersatz-handle-post-argument-parsing-error (error-message)
   (new-server-answer :HTTP-code HTTP-unprocessable-entity
