@@ -133,8 +133,8 @@ Since the presence of the api_key was already checked, I will throw an error if 
     (setq ersatz-storage (cons alist-element ersatz-storage))
     id))
 
-(defun ersatz-paste-json-from-storage (id)
-  (ersatz-paste-to-json id (cdr (assoc id ersatz-storage))))
+(defun ersatz-paste-json-from-storage (id &optional hide-body)
+  (ersatz-paste-to-json id (cdr (assoc id ersatz-storage)) t))
 
 (defun ersatz-100-continue? (headers)
   (string= "100-continue"
@@ -168,7 +168,7 @@ Since the presence of the api_key was already checked, I will throw an error if 
                                         (ersatz-get-content-length headers)
                                         (-partial #'ersatz-build-answer arguments))))
       (let ((arguments-with-body (ersatz-get-arguments-with-paste-body headers arguments)))
-        (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! arguments-with-body)))))))
+        (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! arguments-with-body) t))))))
 
 (defun ersatz-handle-post-argument-parsing-error (error-message)
   (new-server-answer :HTTP-code HTTP-unprocessable-entity

@@ -37,7 +37,7 @@ It strives to keep paste a value, despite not being ELISP truly a functional lan
 (defun ersatz-paste-overdue? (paste)
   (< (ersatz-paste-compute-float-duration paste) 1))
 
-(defun ersatz-paste-to-table (id paste)
+(defun ersatz-paste-to-table (id paste &optional hide-body)
   (let ((table (make-hash-table)))
     (puthash "id" id table)
     (puthash "title" (paste-title paste) table)
@@ -47,11 +47,12 @@ It strives to keep paste a value, despite not being ELISP truly a functional lan
     (puthash "duration"
              (ersatz-paste-compute-duration paste)
              table)
-    (puthash "body" (paste-body paste) table)
+    (unless hide-body
+      (puthash "body" (paste-body paste) table))
     table))
 
-(defun ersatz-paste-to-json (id paste)
-  (json-encode (ersatz-paste-to-table id paste)))
+(defun ersatz-paste-to-json (id paste &optional hide-body)
+  (json-encode (ersatz-paste-to-table id paste hide-body)))
 
 (defun ersatz-create-pastes-list (id-list)
   (--map (ersatz-paste-to-table (car it) (cdr it))
