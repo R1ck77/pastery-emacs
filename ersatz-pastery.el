@@ -154,6 +154,11 @@ Since the presence of the api_key was already checked, I will throw an error if 
 (defun ersatz-get-content-length (headers)
   (string-to-number (cdr (assoc :CONTENT-LENGTH headers))))
 
+(defun ersatz-build-answer (arguments current-process content)
+  (let ((paste-id (ersatz-paste-from-arguments! (append (list :body content) arguments))))
+    (ersatz-send-answer (new-server-answer :message (ersatz-paste-json-from-storage paste-id))
+                        current-process)))
+
 (defun ersatz-handle-post-valid-arguments (headers arguments)
   (lexical-let ((arguments arguments))
     (if (ersatz-100-continue? headers)
@@ -161,11 +166,7 @@ Since the presence of the api_key was already checked, I will throw an error if 
           (set-process-filter process
                               (-partial #'ersatz-continue-callback
                                         (ersatz-get-content-length headers)
-                                        ;; TODO/FIXME extract!
-                                        (lambda (current-process content)
-                                          (let ((paste-id (ersatz-paste-from-arguments! (append (list :body content) arguments))))
-                                            (ersatz-send-answer (new-server-answer :message (ersatz-paste-json-from-storage paste-id))
-                                                                current-process))))))
+                                        (-partial #'ersatz-build-answer arguments))))
       (let ((arguments-with-body (ersatz-get-arguments-with-paste-body headers arguments)))
         (new-server-answer :message (ersatz-paste-json-from-storage (ersatz-paste-from-arguments! arguments-with-body)))))))
 
