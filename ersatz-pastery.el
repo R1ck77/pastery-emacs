@@ -42,9 +42,9 @@ message-template, if provided, will write a message passing the paste id as an a
 (defun ersatz-clean-storage! ()
   "Remove all pastes that are overdue"
   (ersatz-remove-from-storage! (lambda (paste)
-                                (<= (or (paste-max_views paste) 1) 0))
+                                (<= (or (paste-metadata-max_views (cdr paste)) 1) 0))
                               "Deleting paste '%s' due to view limit exceeded")
-  (ersatz-remove-from-storage! #'ersatz-paste-overdue?
+  (ersatz-remove-from-storage! (lambda (paste) (ersatz-paste-overdue? (cdr paste)))
                               "Deleting paste '%s' due to duration exceeded"))
 
 ;;;;;;;;
@@ -141,8 +141,6 @@ Since the presence of the api_key was already checked, I will throw an error if 
            (downcase
             (or (cdr (assoc :EXPECT headers)) ""))))
 
-(defun ersatz-handle-post-small-body ())
-
 (defun ersatz-extract-post-body (headers)
   "Return the content of the POST message body"
   (caar (last headers)))
@@ -188,7 +186,7 @@ Since the presence of the api_key was already checked, I will throw an error if 
 Decrement the max-views count"
   (let ((result (ersatz-pastes-to-json (list id))))
     (if-let ((paste (cdr (assoc id ersatz-storage))))
-        (when (paste-max_views paste)
+        (when (paste-metadata-max_views (cdr paste))
           (setq ersatz-storage (assoc-delete-all id ersatz-storage))
           (push (cons id (ersatz-paste-with-decremented-view paste)) ersatz-storage)))
     result))
@@ -211,7 +209,7 @@ There is a bug/curious feature in the original server where listing the pastes w
 ;;; DELETE
 (defun ersatz-delete-paste! (id owner)
   (let ((paste (cdr (assoc id ersatz-storage))))
-    (if (or (not paste) (not (equal (paste-owner paste) owner)))
+    (if (or (not paste) (not (equal (paste-metadata-owner (cdr paste)) owner)))
         "{\"result\": \"error\", \"error_msg\": \"That paste does not belong to you.\"}"
       (setq ersatz-storage (assoc-delete-all id ersatz-storage))
       "{\"result\": \"success\"}")))

@@ -1,54 +1,68 @@
 ;;; Paste definition
 
-;; TODO/FIXME this paste contains both paste related stuff, and handling related stuff. Use two structures
-(cl-defstruct (paste (:constructor new-paste))
-  (initial-duration 43200 :read-only t)
-  (created (float-time) :read-only t)
-  (title "" :read-only t)
-  (language "text" :read-only t)
-  (max_views nil :read-only t)
-  (body "" :read-only t)
-  (owner nil :read-only t))
+(cl-defstruct (paste-data (:constructor new-paste-data))
+              (title "" :read-only t)
+              (language "text" :read-only t)
+              (body "" :read-only t))
 
-(defun ersatz-paste-with-decremented-view (paste)
+(cl-defstruct (paste-metadata (:constructor new-paste-metadata))
+              (initial-duration 43200 :read-only t)
+              (created (float-time) :read-only t)
+              (max_views nil :read-only t)
+              (owner nil :read-only t))
+
+(defun ersatz-filter-arguments (arguments allowed-keys)
+  (let ((pairs (-partition-all 2 arguments)))
+    (-flatten-n 1(--map (list (car it) (cadr it)) (--filter (member (car it) allowed-keys) pairs)))))
+
+(defun new-paste (&rest arguments)
+  (cons
+   (apply #'new-paste-data (ersatz-filter-arguments arguments'(:title :language :body)))
+   (apply #'new-paste-metadata (ersatz-filter-arguments arguments '(:initial-duration :created :max_views :owner)))))
+
+(defun ersatz-get-paste-owner (paste)
+  (paste-metadata-owner (cdr paste)))
+
+(defun ersatz-paste-with-decremented-view (paste-cons)
   "Stridently functional approach to decrementing the paste
 
 It strives to keep paste a value, despite not being ELISP truly a functional language."
-  (let ((old-max-views (paste-max_views paste)))
-    (new-paste :initial-duration (paste-initial-duration paste)
-               :created (paste-created paste)
-               :title (paste-title paste)
-               :language (paste-language paste)
-               :max_views (and old-max-views (1- old-max-views))
-               :body (paste-body paste)
-               :owner (paste-owner paste))))
+  (let* ((metadata (cdr paste-cons))
+         (old-max-views (paste-metadata-max_views metadata)))    
+    (cons (car paste-cons)
+          (new-paste-metadata :initial-duration (paste-metadata-initial-duration metadata)
+                              :created (paste-metadata-created metadata)
+                              :max_views (and old-max-views (1- old-max-views))
+                              :owner (paste-metadata-owner metadata)))))
 
-(defun ersatz-paste-compute-float-duration (paste)
+(defun ersatz-paste-compute-float-duration (metadata)
   "Compute how many seconds remain before a paste is overdue"
   (let ((now (float-time))
-        (initial-duration-s (* 60 (paste-initial-duration paste))))
-    (- initial-duration-s (- now (paste-created paste)))))
+        (initial-duration-s (* 60 (paste-metadata-initial-duration metadata))))
+    (- initial-duration-s (- now (paste-metadata-created metadata)))))
 
-(defun ersatz-paste-compute-duration (paste)
+(defun ersatz-paste-compute-duration (metadata)
   "Compute the value of 'paste validity' in minutes as the user should see it"
   (truncate
-   (/ (ersatz-paste-compute-float-duration paste) 60)))
+   (/ (ersatz-paste-compute-float-duration metadata) 60)))
 
-(defun ersatz-paste-overdue? (paste)
-  (< (ersatz-paste-compute-float-duration paste) 1))
+(defun ersatz-paste-overdue? (metadata)
+  (< (ersatz-paste-compute-float-duration metadata) 1))
 
 (defun ersatz-paste-to-table (id paste &optional hide-body)
-  (let ((table (make-hash-table)))
+  (let ((table (make-hash-table))
+        (data (car paste))
+        (metadata (cdr paste)))
     (puthash "id" id table)
-    (puthash "title" (paste-title paste) table)
+    (puthash "title" (paste-data-title data) table)
     ;; This isn't really accurate if the server is started on a different interface
     (puthash "url" (format "http://localhost:%d/%s/" ersatz-pastery-server-port id) table)
-    (puthash "language" (paste-language paste) table)
+    (puthash "language" (paste-data-language data) table)
     (puthash "duration"
-             (ersatz-paste-compute-duration paste)
+             (ersatz-paste-compute-duration metadata)
              table)
     (unless hide-body
-      (puthash "body" (paste-body paste) table))
+      (puthash "body" (paste-data-body data) table))
     table))
 
 (defun ersatz-paste-to-json (id paste &optional hide-body)
