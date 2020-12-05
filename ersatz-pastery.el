@@ -224,7 +224,6 @@ There is a bug/curious feature in the original server where listing the pastes w
     (forward-line)
     (buffer-substring-no-properties (point) (point-max))))
 
-;;; TODO/FIXME duplicated code with the path splitting function
 (defun ersatz-get-path-error (path)
   "Returns nil if the path 'looks ok' or (301 . '') if it does not"
   (let ((components (split-string path "/")))
