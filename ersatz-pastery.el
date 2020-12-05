@@ -198,12 +198,10 @@ There is a bug/curious feature in the original server where listing the pastes w
   (ersatz-storage-to-json owner))
 
 (defun ersatz-handle-get! (path headers owner)
-  (if-let (id (ersatz-get-paste-id path))
+  (let ((id (ersatz-get-paste-id path)))
       (if (string-empty-p id)
           (ersatz-handle-get-list owner)
-        (ersatz-handle-get-paste! id))
-      ;;; TODO/FIXME handle this 301 no content
-    (error "INVALID SOMETHING. Handle this")))
+        (ersatz-handle-get-paste! id))))
 
 ;;;;;;;;;;
 ;;; DELETE
@@ -215,7 +213,6 @@ There is a bug/curious feature in the original server where listing the pastes w
       "{\"result\": \"success\"}")))
 
 (defun ersatz-handle-delete! (path owner)
-  ;;; TODO/FIXME handle the 301 case
   (ersatz-delete-paste! (ersatz-get-paste-id path) owner))
 
 (defun read-sample (name)

@@ -1,10 +1,25 @@
 (require 'buttercup)
 (require 'ersatz-pastery-debug)
 (require 'pastery-test-utils)
+(require 'pastery-api)
+(require 'request)
 
 (defconst ersatz-large-test-size 20000)
 
 (describe "ersatz-pastery-server use cases"
+  (it "put returns 301 if the path is wrong"
+    (with-debug-server
+     (let ((response (request "http://localhost:8080/api/something/"
+                              :params '(("api_key" . "key1"))
+                              :sync t)))
+       (expect (request-response-status-code response) :to-be 301 ))))
+  (it "delete returns 301 if the path is wrong"
+    (with-debug-server
+     (let ((response (request "http://localhost:8080/api/something/"
+                              :params '(("api_key" . "key1"))
+                              :type "DELETE"
+                              :sync t)))
+       (expect (request-response-status-code response) :to-be 301 ))))
   (it "create, get and destroy your own pastes"
     (with-debug-server
      (let ((paste-id)
@@ -103,6 +118,3 @@
        ;; The paste is still there, though
        (let ((paste-json-as-other (pastery/get-paste "key2" paste-id)))
          (expect paste-json-as-other :to-equal paste-json-as-owner))))))
-
-
-
