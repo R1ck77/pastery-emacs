@@ -8,8 +8,6 @@
 (require 'ersatz-continue-handling)
 (require 'pastery-consts)
 
-;;; TODO/FIXME just for curiosity, try passing "ersatz-storage" everywhere instead of having it a global
-
 (defvar ersatz-valid-keys nil
   "Keys accepted by the current server")
 
