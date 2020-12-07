@@ -13,6 +13,19 @@
 
 (defvar ersatz-storage '())
 
+(defun ersatz-save-storage (path)
+  "Save the storage to a file"
+  (with-temp-file path
+    (prin1 ersatz-storage (current-buffer))
+    nil))
+
+(defun ersatz-load-storage (path)
+  "Load the storage from a file"
+  (read
+   (with-temp-buffer
+     (insert-file-contents-literally path)
+     (buffer-substring-no-properties (point-min) (point-max)))))
+
 (cl-defstruct (ersatz-answer (:constructor new-server-answer))
   (keep-alive nil :read-only t)
   (HTTP-code HTTP-ok :read-only t)
@@ -276,16 +289,17 @@ There is a bug/curious feature in the original server where listing the pastes w
                            (lambda (answer)
                              (ersatz-send-answer answer process)))))
 
-(defun stop-ersatz-server ()
+(defun stop-ersatz-server (&optional storage-file)
   (interactive)
-  (ws-stop-all))
+  (ws-stop-all)
+  (and storage-file (ersatz-save-storage storage-file)))
 
-(defun start-ersatz-server (valid-keys &optional try-kill)
+(defun start-ersatz-server (valid-keys &optional try-kill storage-file)
   (interactive)
   (setq ersatz-valid-keys valid-keys)
   (when try-kill
     (stop-ersatz-server))
-  (setq ersatz-storage '())
+  (setq ersatz-storage (and storage-file (ersatz-load-storage storage-file)))
   (ws-start #'ersatz-pastery-handler ersatz-pastery-server-port))
 
 (provide 'ersatz-pastery)
