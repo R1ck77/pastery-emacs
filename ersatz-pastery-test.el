@@ -117,4 +117,16 @@
          (expect (alist-get 'error_msg delete-paste-result) :to-equal "That paste does not belong to you."))
        ;; The paste is still there, though
        (let ((paste-json-as-other (pastery/get-paste "key2" paste-id)))
-         (expect paste-json-as-other :to-equal paste-json-as-owner))))))
+         (expect paste-json-as-other :to-equal paste-json-as-owner)))))
+  (it "saves and restores the pastes from a file"
+    (let ((temp-file-path (make-temp-file "ersatz-server-test")))
+      (start-ersatz-server (list "key1" "key2") t)
+      (expect ersatz-storage :to-be nil)
+      (pastery/put-paste "key1" "title" "body" "c")
+      (let ((ersatz-copy ersatz-storage))
+        (expect (length ersatz-storage) :to-be 1)
+        (stop-ersatz-server temp-file-path)
+        (setq ersatz-storage nil)
+        (start-ersatz-server (list "key1" "key2") t temp-file-path)
+        (expect ersatz-storage :to-equal ersatz-copy)
+        (stop-ersatz-server)))))
